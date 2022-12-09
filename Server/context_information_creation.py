@@ -1,10 +1,6 @@
-import json
-
-# this class intends to send randomized context information to the client
 import random
-from itertools import count
 from dataclasses import dataclass, field
-from datetime import datetime
+from itertools import count
 
 
 @dataclass
@@ -21,10 +17,6 @@ class ContextInformationCreation():
     # bei location vllt auch ein Tuple nehmen, für die Koordinatenangabe
     location: str
     elicitation_date: str
-
-    @staticmethod
-    def battery_information() -> int:
-        return random.randint(0, 99)
 
     @staticmethod
     def battery_information() -> int:
