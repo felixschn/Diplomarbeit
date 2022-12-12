@@ -14,6 +14,7 @@ def connection_to_server():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Connect to server and send data
     for port in range(64997, 65000):
+        print(port)
         try:
             sock.connect((HOST, port))
             # sock.sendall(bytes(data + "\n", "utf-8"))
@@ -28,6 +29,7 @@ def connection_to_server():
 
 def sending_context_information():
     while True:
+        # create context information object
         context_information_2 = cic.ContextInformationCreation(
             cic.ContextInformationCreation.battery_information(),
             cic.ContextInformationCreation.distance_generator(),
@@ -36,13 +38,18 @@ def sending_context_information():
         print(context_information_2)
 
         try:
+            # send message and generate json out of
+            # context information object
             sock.send(bytes(
                 json.dumps(context_information_2.__dict__),
                 encoding='utf-8'))
-            time.sleep(1)
 
-            # Receive data from the server and shut down
-            received = str(sock.recv(1024), "utf-8")
+            # Receive data from the server and shut down;
+            # TODO implement possible server responses
+            # received = str(sock.recv(1024), "utf-8")
+
+            # adjust time to send less or more messages
+            time.sleep(10)
 
         except:
             print(
@@ -51,12 +58,8 @@ def sending_context_information():
 
 
 if __name__ == '__main__':
-    HOST, PORT = "localhost", 64990
+    HOST = '127.0.0.1'
     time_format = '%Y-%m-%dT%H:%M:%S.%f'
-
-    data = 'Bergholz war hier, auch heute'
-    # Create a socket (SOCK_STREAM means a TCP socket)
-
     while True:
         if connection_to_server():
             sending_context_information()
@@ -64,6 +67,3 @@ if __name__ == '__main__':
             print("Couldn't establish socket connection")
             print("Will try again after 10 sec ...")
             time.sleep(10)
-
-    print("Sent:     {}".format(data))
-    # print("Received: {}".format(received))
