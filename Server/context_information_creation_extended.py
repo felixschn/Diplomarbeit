@@ -4,10 +4,12 @@ from itertools import count
 
 
 @dataclass
-class ContextInformationCreation():
+class ContextInformationCreationExtended():
     # get unique identifier for each object
     identifier: int = field(default_factory=count().__next__, init=False)
     battery_state: int
+    battery_consumption: int
+    battery_health: str
 
     # anmerkungen:
     # 1)vllt bei der Distanz eine Liste nehmen, falls verschiedene Ladestationen angezeigt wreden sollen
@@ -28,4 +30,5 @@ class ContextInformationCreation():
 
     @staticmethod
     def location_generator() -> str:
-        return str(random.uniform(1.0000000, 99.999999)) + ',' + str(random.uniform(1.0000000, 99.999999))
+        return str(random.uniform(1.0000000, 99.999999)) + ',' + str(
+            random.uniform(1.0000000, 99.999999))
