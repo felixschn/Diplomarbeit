@@ -1,5 +1,8 @@
+import json
 import random
 import socketserver
+
+import context_information_database
 
 HOST = "localhost"
 
@@ -8,10 +11,11 @@ HOST = "localhost"
 PORT = random.randint(64997, 64999)
 print(PORT)
 time_format = '%Y-%m-%dT%H:%M:%S.%f'
+context_information_database.create_context_information_database()
+context_information_dictionary = {}
 
 
 class ConnectionTCPHandler(socketserver.BaseRequestHandler):
-
     def handle(self) -> None:
         while True:
             try:
@@ -19,8 +23,11 @@ class ConnectionTCPHandler(socketserver.BaseRequestHandler):
                 print("{} wrote:".format(
                     self.client_address[0]))
                 print(self.data.decode('utf-8'))
-                # just send back the same data, but upper-cased
-                self.request.sendall(self.data)
+                context_information_dictionary = json.loads(self.data)
+                print(context_information_dictionary.values())
+
+                # just send back the same data
+                # self.request.sendall(self.data)
             except:
                 print("...Lost connection to client...")
                 print("...Waiting for reconnection...")
