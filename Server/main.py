@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 
 import Server.context_information_creation as cic
+import Server.context_information_creation_extended as cice
 
 sock = None
 
@@ -33,18 +34,26 @@ def connection_to_server(port):
 def sending_context_information():
     while True:
         # create context information object
-        context_information_2 = cic.ContextInformationCreation(
+        context_information = cic.ContextInformationCreation(
             cic.ContextInformationCreation.battery_information(),
             cic.ContextInformationCreation.distance_generator(),
             cic.ContextInformationCreation.location_generator(),
             datetime.now().strftime(time_format))
-        print(context_information_2)
+
+        context_information_extended = cice.ContextInformationCreationExtended(
+            cice.ContextInformationCreationExtended.battery_information(),
+            cice.ContextInformationCreationExtended.battery_information(),
+            "good",
+            cice.ContextInformationCreationExtended.distance_generator(),
+            cice.ContextInformationCreationExtended.location_generator(),
+            datetime.now().strftime(time_format)
+        )
+        print(context_information_extended)
 
         try:
-            # send message and generate json out of
-            # context information object
+            # send message and generate json out of context information object
             sock.send(bytes(
-                json.dumps(context_information_2.__dict__),
+                json.dumps(context_information.__dict__),
                 encoding='utf-8'))
 
             # Receive data from the server and shut down;
