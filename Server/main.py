@@ -6,6 +6,8 @@ from datetime import datetime
 import Server.context_information_creation as cic
 
 sock = None
+
+
 # created method for socket connection in order to re-establish connection if server was shutdown
 # idea:https://stackoverflow.com/questions/15870614/python-recreate-a-socket-and-automatically-reconnect
 def connection_to_server(port):
