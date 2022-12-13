@@ -29,23 +29,19 @@ def create_table_context_information_database(table_attributes):
 def insert_values_ci_db(context_information_values):
     db_cursor = db_connection.cursor()
     # create adaptive query with respect to the total amount of keys in context_information_values dict
-    insert_query_string = """INSERT INTO received_context_information("""
+    insert_query_string = "INSERT INTO received_context_information("
 
     # retrieve all keys from dict and write it into query; add necessary ',' to the end
-    for key in context_information_values.keys():
-        insert_query_string = insert_query_string + key + ","
-
-    # last key value should not have a ',' in order to have a valid query
-    insert_query_string = insert_query_string[0:-1]
+    insert_query_string += ",".join(context_information_values.keys())
 
     # append needed sql statement VALUES
-    insert_query_string = insert_query_string + """) VALUES ("""
+    insert_query_string += ") VALUES ("
 
     # add placeholder ? for every key in context_information_values; add necessary ',' to the end
-    insert_query_string = insert_query_string + len(context_information_values.keys()) * '?,'
+    insert_query_string += len(context_information_values.keys()) * '?,'
 
     # last ? should not have a ',' in order to have a valid query; close query string with )
-    insert_query_string = insert_query_string[0:-1] + ')'
+    insert_query_string = insert_query_string[:-1] + ')'
 
     # add items to database, commit and close
     db_cursor.execute(insert_query_string, list(context_information_values.values()))
