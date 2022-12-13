@@ -12,7 +12,6 @@ PORT = random.randint(64997, 64999)
 print(PORT)
 time_format = '%Y-%m-%dT%H:%M:%S.%f'
 context_information_database.create_context_information_database()
-context_information_dictionary = {}
 
 
 class ConnectionTCPHandler(socketserver.BaseRequestHandler):
@@ -23,9 +22,11 @@ class ConnectionTCPHandler(socketserver.BaseRequestHandler):
                 print("{} wrote:".format(
                     self.client_address[0]))
                 print(self.data.decode('utf-8'))
-                context_information_dictionary = json.loads(self.data)
-                print(context_information_dictionary.values())
-
+                # deserialization of the received byte string back to json for creating
+                # table columns out of the dictionary keys
+                context_information_database.create_table_context_information_database(
+                    json.loads(self.data))
+                context_information_database.insert_values_ci_db(json.loads(self.data))
                 # just send back the same data
                 # self.request.sendall(self.data)
             except:
