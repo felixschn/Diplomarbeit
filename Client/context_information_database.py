@@ -1,0 +1,44 @@
+import sqlite3
+from urllib.request import pathname2url
+
+
+# generate database to store received context information
+def create_context_information_database():
+    global db_connection
+    db_name = 'context_information_database'
+
+    # https://stackoverflow.com/questions/12932607/how-to-check-if-a-sqlite3-database-exists-in-python
+    db_uri = 'file:{}?mode=rwc'.format(pathname2url(db_name))
+    db_connection = sqlite3.connect(db_uri, uri=True)
+
+
+def create_table_context_information_database(table_attributes):
+    db_cursor = db_connection.cursor()
+
+    db_cursor.execute("CREATE TABLE if not exists "
+                      "received_context_information(%s)" % ", ".join(table_attributes))
+
+    # add new column to table if table_attributes comes with additional non exising values
+    for item in table_attributes:
+        try:
+            db_cursor.execute("ALTER TABLE received_context_information ADD COLUMN '%s'" %
+                              item)
+        except:
+            print("table column already exist")
+
+
+def insert_values_ci_db(context_information_values):
+    db_cursor = db_connection.cursor()
+    insert_query = """INSERT INTO received_context_information
+                (id, battery_state, charging_station_distance, location, 
+                elicitation_date) VALUES (?,?,?,?,?)"""
+
+    db_cursor.executemany(insert_query, context_information_values)
+    db_connection.commit()
+    db_cursor.close()
+
+# create_context_information_database()
+# create_table_context_information_database(["id", "battery_state",
+#                                            "charging_station_distance", "location",
+#                                            "elicitation_date",
+#                                            "bergholz", "klaus"])
