@@ -51,9 +51,3 @@ def insert_values_ci_db(context_information_values):
     db_cursor.execute(insert_query_string, list(context_information_values.values()))
     db_connection.commit()
     db_cursor.close()
-
-# create_context_information_database()
-# create_table_context_information_database(["id", "battery_state",
-#                                            "charging_station_distance", "location",
-#                                            "elicitation_date",
-#                                            "bergholz", "klaus"])
