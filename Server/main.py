@@ -5,25 +5,26 @@ from datetime import datetime
 
 import Server.context_information_creation as cic
 
-
+sock = None
 # created method for socket connection in order to re-establish connection if server was shutdown
 # idea:https://stackoverflow.com/questions/15870614/python-recreate-a-socket-and-automatically-reconnect
-def connection_to_server():
+def connection_to_server(port):
     global sock
     # TODO check behaviour if server is closed during connection and vice versa
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Connect to server and send data
-    for port in range(64997, 65000):
-        print(port)
-        try:
-            sock.connect((HOST, port))
-            # sock.sendall(bytes(data + "\n", "utf-8"))
-            print('Connection established')
-            return True
-        except:
-            print(
-                "Couldn't connect, because wrong port or IP address was used",
-                port)
+
+    try:
+        sock.connect((HOST, port))
+        # sock.sendall(bytes(data + "\n", "utf-8"))
+        print('Connection established')
+        return True
+
+    except:
+        print(
+            "Couldn't connect, because wrong port or IP address was used",
+            port)
+
     return False
 
 
@@ -61,9 +62,9 @@ if __name__ == '__main__':
     HOST = '127.0.0.1'
     time_format = '%Y-%m-%dT%H:%M:%S.%f'
     while True:
-        if connection_to_server():
-            sending_context_information()
-        else:
-            print("Couldn't establish socket connection")
-            print("Will try again after 10 sec ...")
-            time.sleep(10)
+        for port in range(64997, 65000):
+            if connection_to_server(port):
+                sending_context_information()
+            else:
+                print("Couldn't establish socket connection")
+                print("Will try again after 10 sec ...")
