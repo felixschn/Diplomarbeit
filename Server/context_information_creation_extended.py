@@ -29,6 +29,5 @@ class ContextInformationCreationExtended():
         return round(random.uniform(0.00, 999.99), 2)
 
     @staticmethod
-    def location_generator() -> str:
-        return str(random.uniform(1.0000000, 99.999999)) + ',' + str(
-            random.uniform(1.0000000, 99.999999))
+    def location_generator() -> int:
+        return random.randint(1, 193)
