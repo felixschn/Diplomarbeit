@@ -4,11 +4,11 @@ import Client.context_information_database as cid
 
 
 # test data
-# context_information_dictionary = {"identifier": 268, "battery_state": 47, "charging_station_distance": 42.8,
-# "location": 41, "elicitation_date": "2022-12-13T19:47:40.996571"}
+# context_information_dictionary = {"identifier": 268, "battery_state": 50, "charging_station_distance": 500,
+#                                  "location": 41, "elicitation_date": "2022-12-13T19:47:40.996571"}
 
 
-def calculate_weights(context_information_dictionary):
+def calculate_weights(context_information_dictionary) -> float:
     # create database cursor
     db_cursor = cid.get_cursor()
 
@@ -29,8 +29,11 @@ def calculate_weights(context_information_dictionary):
         min = keystore_dict[key][0]
         good = keystore_dict[key][2]
         weight = keystore_dict[key][3]
+
+        # TODO:  further evaluation take string form database with seperators and build list out of string
         seperator = ast.literal_eval(keystore_dict[key][4])  # .strip('][').split(', ')
 
+        # normalizing data because of different values (due to units e.g. 1000km distance vs 75% battery)
         # normalized = (value - min) / (max - min )
         # normalized = ((context_information_dictionary[key] - keystoredict[key][1])/ (keystoredict[key][2] - keystoredict[key][1]))
         normalized = (context_information_dictionary[key] - min) / (max - min)
@@ -42,3 +45,5 @@ def calculate_weights(context_information_dictionary):
             weight_sum += normalized * weight
 
         print(weight_sum)
+
+    return weight_sum
