@@ -48,13 +48,14 @@ def sending_context_information():
             cice.ContextInformationCreationExtended.location_generator(),
             datetime.now().strftime(time_format)
         )
-        print(context_information_extended)
+
 
         try:
             # send message and generate json out of context information object
             sock.send(bytes(
-                json.dumps(context_information.__dict__),
+                json.dumps(context_information_extended.__dict__),
                 encoding='utf-8'))
+            print(json.dumps(context_information_extended.__dict__))
 
             # Receive data from the server and shut down;
             # TODO implement possible server responses
