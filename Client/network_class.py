@@ -24,14 +24,18 @@ class ConnectionTCPHandler(socketserver.BaseRequestHandler):
                     self.client_address[0]))
                 print(self.data.decode('utf-8'))
 
+                # TODO: check timestamp in received data and compare with system time in order to neglect context information
+
+                # create dict out of received data; call calculate_weights and add to dict
+                received_data_dict = json.loads(self.data)
+                received_data_dict['weight'] = Client.weights.calculate_weights(json.loads(self.data))
+
                 # deserialization of the received byte string back to json for creating
                 # table columns out of the dictionary keys
-                context_information_database.create_table_context_information_database(
-                    json.loads(self.data))
-                context_information_database.insert_values_ci_db(json.loads(self.data))
+                context_information_database.create_table_context_information_database(received_data_dict)
+                context_information_database.insert_values_ci_db(received_data_dict)
 
-                # call calc function to evalute recieved data
-                Client.weights.calculate_weights(json.loads(self.data))
+
 
             except:
                 print("...Lost connection to client...")
