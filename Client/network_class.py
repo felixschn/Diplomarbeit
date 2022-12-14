@@ -2,6 +2,7 @@ import json
 import random
 import socketserver
 
+import Client.weights
 import context_information_database
 
 HOST = "localhost"
@@ -22,13 +23,16 @@ class ConnectionTCPHandler(socketserver.BaseRequestHandler):
                 print("{} wrote:".format(
                     self.client_address[0]))
                 print(self.data.decode('utf-8'))
+
                 # deserialization of the received byte string back to json for creating
                 # table columns out of the dictionary keys
                 context_information_database.create_table_context_information_database(
                     json.loads(self.data))
                 context_information_database.insert_values_ci_db(json.loads(self.data))
-                # just send back the same data
-                # self.request.sendall(self.data)
+
+                # call calc function to evalute recieved data
+                Client.weights.calculate_weights(json.loads(self.data))
+
             except:
                 print("...Lost connection to client...")
                 print("...Waiting for reconnection...")
