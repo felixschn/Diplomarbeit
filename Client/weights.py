@@ -3,12 +3,16 @@ import ast
 import Client.context_information_database as cid
 
 
+# high weight means   option for more security features
+# low weight means    not enough power or threads for sec features
+
+
 # test data
 # context_information_dictionary = {"identifier": 268, "battery_state": 50, "charging_station_distance": 500,
 #                                  "location": 41, "elicitation_date": "2022-12-13T19:47:40.996571"}
 
 
-def calculate_weights(context_information_dictionary) -> float:
+def calculate_weights(context_information_dict) -> float:
     # create database cursor
     db_cursor = cid.get_cursor()
 
@@ -22,28 +26,62 @@ def calculate_weights(context_information_dictionary) -> float:
 
     # calculate weights for evaluation
     weight_sum = 0
-    for key in context_information_dictionary.keys():
+    for key in context_information_dict.keys():
         if key not in keystore_dict.keys():
             continue
-        max = keystore_dict[key][1]
-        min = keystore_dict[key][0]
-        good = keystore_dict[key][2]
+
         weight = keystore_dict[key][3]
 
-        # TODO:  further evaluation take string form database with seperators and build list out of string
-        seperator = ast.literal_eval(keystore_dict[key][4])  # .strip('][').split(', ')
+        # TODO:  further evaluation take string form database with separators and build list out of string
+        separator = ast.literal_eval(keystore_dict[key][4])  # .strip('][').split(', ')
 
-        # normalizing data because of different values (due to units e.g. 1000km distance vs 75% battery)
-        # normalized = (value - min) / (max - min )
-        # normalized = ((context_information_dictionary[key] - keystoredict[key][1])/ (keystoredict[key][2] - keystoredict[key][1]))
-        normalized = (context_information_dictionary[key] - min) / (max - min)
-        middle = (max - min) / 2
+        distance_keys = ['battery_state', 'charging_station_distance', 'battery_consumption']
+        if (key in distance_keys) and set(distance_keys).issubset(context_information_dict.keys()):
+            if key != distance_keys[0]:
+                continue  # skip other keys so that weight is not calculated multiple times
+            weight_sum += distance(context_information_dict['battery_state'],
+                                   context_information_dict['charging_station_distance'],
+                                   context_information_dict['battery_consumption'], weight)
 
-        if good > middle:
-            weight_sum += (1 - normalized) * weight
+            pass
         else:
-            weight_sum += normalized * weight
-
-        print(weight_sum)
+            max = keystore_dict[key][1]
+            min = keystore_dict[key][0]
+            good = keystore_dict[key][2]
+            weight_sum += normalized_weight(context_information_dict[key], min, max, good, weight)
 
     return weight_sum
+
+
+def normalized_weight(value, min, max, good, weight) -> float:
+    # normalizing data because of different values (due to units e.g. 1000km distance vs 75% battery)
+    normalized = (value - min) / (max - min)
+
+    middle = (max - min) / 2
+    if good > middle:
+        return normalized * weight
+    else:
+        return (1 - normalized) * weight
+
+
+def distance(charge, distance, consumption, weight) -> float:
+    # charge                              in   %
+    # distance to next charging point     in   km
+    # consumption                         in   kWh / 100km
+
+    capacity = 100  # in  kWh     TODO: edit param battery capacity or transmit value
+    charge = charge * capacity
+    range = charge / consumption * 100  # estimated range with current consumption
+
+    reserve = range / distance
+    # reserve >> 1.2     is good
+    # 1.2 > reserve > 1  is dangerous
+    # 1 > reserve        is catastrophic
+
+    if reserve < 1:
+        return 0.0  # TODO or maybe even negative numbers?
+
+    if reserve < 1.2:
+        return reserve * weight * 0.5  # half weight because the small reserve is still critical # TODO: edit param?
+
+    return reserve * weight
