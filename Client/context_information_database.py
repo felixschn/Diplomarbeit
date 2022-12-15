@@ -11,6 +11,13 @@ def create_context_information_database():
     add_columns()
 
 
+# retrieve entry with the latest date
+def get_latest_date_entry() -> str:
+    db_cursor = get_cursor()
+    max_date_query = "SELECT MAX(elicitation_date) From received_context_information"
+    return db_cursor.execute(max_date_query).fetchall()[0][0]
+
+
 def add_columns():
     db_cursor = get_cursor()
     db_cursor.execute(
