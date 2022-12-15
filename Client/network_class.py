@@ -72,12 +72,10 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
             context_information_database.insert_values_ci_db(received_data_dict)
 
 
-with socketserver.TCPServer((HOST, PORT),
-                            ConnectionTCPHandler) as server:
+with socketserver.ThreadingTCPServer((HOST, PORT), ConnectionTCPHandler) as server:
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
     print("Waiting for connection")
-    server = socketserver.ThreadingTCPServer(('', 8000), ConnectionTCPHandler)
     server.serve_forever()
     print('Connection')
 
