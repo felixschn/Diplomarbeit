@@ -4,7 +4,7 @@ from itertools import count
 
 
 @dataclass
-class ContextInformationCreation():
+class ContextInformationCreation:
     # get unique identifier for each object
     identifier: int = field(default_factory=count().__next__, init=False)
     battery_state: int
