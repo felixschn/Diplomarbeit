@@ -16,8 +16,11 @@ time_format = '%Y-%m-%dT%H:%M:%S.%f'
 context_information_database.create_context_information_database()
 
 
-class ConnectionTCPHandler(socketserver.BaseRequestHandler):
+class ConnectionTCPHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
+
+        print(f'Connected: {self.client_address[0]}:{self.client_address[1]}')
+
         while True:
             try:
                 self.data = self.request.recv(1024).strip()
@@ -48,7 +51,7 @@ class ConnectionTCPHandler(socketserver.BaseRequestHandler):
                     continue
             except:
                 print("timestamp error while comparing system time with received context information")
-                break
+                continue
 
             try:
                 if datetime.strptime(received_data_dict['elicitation_date'], time_format) < datetime.strptime(
@@ -74,6 +77,7 @@ with socketserver.TCPServer((HOST, PORT),
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
     print("Waiting for connection")
+    server = socketserver.ThreadingTCPServer(('', 8000), ConnectionTCPHandler)
     server.serve_forever()
     print('Connection')
 
