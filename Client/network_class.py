@@ -4,6 +4,7 @@ import socketserver
 from datetime import datetime, timedelta
 
 import Client.weights
+import Client.reasoning
 import context_information_database
 
 HOST = "localhost"
@@ -64,7 +65,12 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
             except:
                 print("timestamp error while comparing the latest database entry with received context information")
 
-            received_data_dict['weight'] = Client.weights.calculate_weights(json.loads(self.data))
+            received_data_dict['nation'] = 'russia'
+            options = Client.reasoning.reasoning(received_data_dict)
+
+            weight, max_weight = Client.weights.calculate_weights(json.loads(self.data))
+            received_data_dict['weight'] = weight
+            best_option = Client.weights.choose_option(weight, max_weight, options)
 
             # deserialization of the received byte string back to json for creating
             # table columns out of the dictionary keys
@@ -72,8 +78,7 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
             context_information_database.insert_values_ci_db(received_data_dict)
 
 
-with socketserver.TCPServer((HOST, PORT),
-                            ConnectionTCPHandler) as server:
+with socketserver.TCPServer((HOST, PORT), ConnectionTCPHandler) as server:
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
     print("Waiting for connection")

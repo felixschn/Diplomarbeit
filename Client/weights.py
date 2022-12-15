@@ -1,10 +1,15 @@
 import ast
+import math
+from bisect import bisect_left, bisect_right
 
 import Client.context_information_database as cid
+import Client.reasoning
 
 
 # high weight means   option for more security features
 # low weight means    not enough power or threads for sec features
+
+# every calculation should return values between 0 and 1 times weight
 
 
 # test data
@@ -12,7 +17,7 @@ import Client.context_information_database as cid
 #                                  "location": 41, "elicitation_date": "2022-12-13T19:47:40.996571"}
 
 
-def calculate_weights(context_information_dict) -> float:
+def calculate_weights(context_information_dict) -> tuple[float, float]:
     # create database cursor
     db_cursor = cid.get_cursor()
 
@@ -26,11 +31,13 @@ def calculate_weights(context_information_dict) -> float:
 
     # calculate weights for evaluation
     weight_sum = 0
+    max_weight = 0
     for key in context_information_dict.keys():
         if key not in keystore_dict.keys():
             continue
 
         weight = keystore_dict[key][3]
+        max_weight += weight
 
         # TODO:  further evaluation take string form database with separators and build list out of string
         separator = ast.literal_eval(keystore_dict[key][4])  # .strip('][').split(', ')
@@ -50,7 +57,7 @@ def calculate_weights(context_information_dict) -> float:
             good = keystore_dict[key][2]
             weight_sum += normalized_weight(context_information_dict[key], min, max, good, weight)
 
-    return weight_sum
+    return weight_sum, max_weight
 
 
 def normalized_weight(value, min, max, good, weight) -> float:
@@ -82,6 +89,17 @@ def distance(charge, distance, consumption, weight) -> float:
         return 0.0  # TODO or maybe even negative numbers?
 
     if reserve < 1.2:
-        return reserve * weight * 0.5  # half weight because the small reserve is still critical # TODO: edit param?
+        return (reserve - 1) * weight * 0.5  # half weight because the small reserve is still critical # TODO: edit param?
 
-    return reserve * weight
+    return normalized_weight(reserve, 1, 50, 50, weight)
+
+
+def choose_option(weight, max_weight, options):
+    # easiest way
+    # return options[math.ceil(weight / max_weight) * len(options)]
+
+    min_lvl = math.ceil(weight / max_weight * len(Client.reasoning.order))
+
+    pos = bisect_left(options, min_lvl, key=lambda x: Client.reasoning.order[x])
+
+    return options[pos]  # TODO: testing
