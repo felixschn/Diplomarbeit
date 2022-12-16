@@ -19,6 +19,7 @@ class ContextInformationCreationExtended():
     # bei location vllt auch ein Tuple nehmen, für die Koordinatenangabe
     location: int
     elicitation_date: str
+    message_type: str = field(default='context_information')
 
     @staticmethod
     def battery_information() -> int:

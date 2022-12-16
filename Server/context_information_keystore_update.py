@@ -11,4 +11,4 @@ class ContextInformationKeystoreUpdate:
     optimum_value: float
     weight: float
     separator_list: list
-    update_announcement: str = field(default='context_information_keystore_update')
+    message_type: str = field(default='keystore_update')
