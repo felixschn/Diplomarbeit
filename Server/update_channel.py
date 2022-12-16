@@ -33,7 +33,7 @@ def sending_context_information():
     while True:
 
         context_information_keystore_update = ciku.ContextInformationKeystoreUpdate('battery_consumption', 0, 50, 0, 1,
-                                                                                    [5, 10, 15, 20, 25, 35])
+                                                                                    '[5, 10, 15, 20, 25, 35]')
 
         try:
             # send message and generate json out of context information object
