@@ -16,7 +16,7 @@ def connection_to_server(port):
     # Connect to server and send data
 
     try:
-        sock.connect((HOST, 8000))
+        sock.connect((HOST, port))
         # sock.sendall(bytes(data + "\n", "utf-8"))
         print('Connection established')
         return True
