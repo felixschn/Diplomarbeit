@@ -1,6 +1,7 @@
 import ast
 import math
-from bisect import bisect_left, bisect_right
+import sqlite3
+from bisect import bisect_left
 
 import Client.context_information_database as cid
 import Client.reasoning
@@ -21,9 +22,17 @@ def calculate_weights(context_information_dict) -> tuple[float, float]:
     # create database cursor
     db_cursor = cid.get_cursor()
 
-    # fetch all rows from database table and store them into keystore_list
-    db_cursor.execute("SELECT * FROM context_information_keystore")
-    keystore_list = db_cursor.fetchall()
+    # TODO check if table keystore exist otherwise no calculation can be done
+    try:
+        # fetch all rows from database table and store them into keystore_list
+        db_cursor.execute("SELECT * FROM context_information_keystore")
+        keystore_list = db_cursor.fetchall()
+
+    except sqlite3.OperationalError:
+        print("""\n[ERROR]:database doesn't contain keystore table;
+            context information cannot be processed without keystore information;
+            waiting for keystore update message\n""")
+        return None, None
 
     keystore_dict = {}
     for i in keystore_list:
@@ -49,8 +58,8 @@ def calculate_weights(context_information_dict) -> tuple[float, float]:
             weight_sum += distance(context_information_dict['battery_state'],
                                    context_information_dict['charging_station_distance'],
                                    context_information_dict['battery_consumption'], weight)
-
             pass
+
         else:
             max = keystore_dict[key][1]
             min = keystore_dict[key][0]
