@@ -8,7 +8,7 @@ class ContextInformationKeystoreUpdate:
     keyname: str
     minimum_value: float
     maximum_value: float
-    optimum_value: float
+    desirable_value: float
     weight: float
     separator_list: str
     message_type: str = field(default='keystore_update')
