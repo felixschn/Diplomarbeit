@@ -49,10 +49,6 @@ def process_context_information_messages(received_data_dict):
     # except:
     #     print("timestamp error while comparing the latest database entry with received context information")
 
-    # TODO get nation number out of received package and compare with nation number list to retrieve correct nation
-    # TODO at the moment the database entry would contain redundant nation entries --> get rid of one ?
-    received_data_dict['nation'] = 'russia'
-
     # evaluate possible set of security mechanisms with respect to data origin (country) and other params which has to be implemented
     options = Client.reasoning.reasoning(received_data_dict)
 
