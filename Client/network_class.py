@@ -26,6 +26,7 @@ def process_update_messages(received_data_dict):
 def process_context_information_messages(received_data_dict):
     db_table_name = 'received_context_information'
 
+    # TODO: check timestamp in received data and compare with system time in order to neglect context information
     try:
         if datetime.strptime(received_data_dict['elicitation_date'],
                              time_format) > datetime.now() + timedelta(minutes=0):
@@ -48,13 +49,18 @@ def process_context_information_messages(received_data_dict):
     # except:
     #     print("timestamp error while comparing the latest database entry with received context information")
 
+    # TODO get nation number out of received package and compare with nation number list to retrieve correct nation
+    # TODO at the moment the database entry would contain redundant nation entries --> get rid of one ?
     received_data_dict['nation'] = 'russia'
+
+    # evaluate possible set of security mechanisms with respect to data origin (country) and other params which has to be implemented
     options = Client.reasoning.reasoning(received_data_dict)
 
     try:
         weight, max_weight = Client.weights.calculate_weights(received_data_dict)
         received_data_dict['weight'] = weight
         best_option = Client.weights.choose_option(weight, max_weight, options)
+        print(best_option)
     except TypeError:
         frameinfo = getframeinfo(currentframe())
         print("""[ERROR]:weight calculation was not possible in""", frameinfo.filename, "in line:", frameinfo.lineno)
@@ -66,9 +72,7 @@ def process_context_information_messages(received_data_dict):
 
 class ConnectionTCPHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
-
         print(f'Connected: {self.client_address[0]}:{self.client_address[1]}')
-
         while True:
             try:
                 self.data = self.request.recv(1024).strip()
@@ -81,9 +85,7 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
                 self.client_address[0]))
             print(self.data.decode('utf-8'))
 
-            # TODO: check timestamp in received data and compare with system time in order to neglect context information
-
-            # create dict out of received data; call calculate_weights and add to dict
+            # create dict out of received data and forward data to designated methods in order to process data for context evaluation
             try:
                 received_data_dict = json.loads(self.data)
 
@@ -97,7 +99,7 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
                         print('received data will be ignored')
                         break
 
-            except:
+            except json.JSONDecodeError:
                 print("transformation of received data failed")
                 break
 
