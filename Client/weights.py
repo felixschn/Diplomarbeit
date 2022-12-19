@@ -111,4 +111,4 @@ def choose_option(weight, max_weight, options):
 
     pos = bisect_left(options, min_lvl, key=lambda x: Client.reasoning.order[x])
 
-    return options[pos]  # TODO: testing
+    return options[pos]  # TODO: testing --> IndexError: list index out of range
