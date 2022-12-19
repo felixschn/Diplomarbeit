@@ -40,16 +40,28 @@ def update_context_information_keystore(keystore_update_message):
 
     # create db table if not already present
     db_cursor.execute(
-        "CREATE TABLE if not exists context_information_keystore(keyname, mini, maxi, good, weight, seperatorlist)")
+        "CREATE TABLE if not exists context_information_keystore(keyname,minimum_value,maximum_value,desirable_value,weight,separatorlist)")
 
     current_columns = db_cursor.execute("SELECT keyname FROM context_information_keystore").fetchall()
     if len(current_columns) == 0:
         pass
-    elif keystore_update_message['keyname'] in current_columns[:][0]:
+
+    # check if keyname is in list, therefore get first elements in a list of tuples
+    elif keystore_update_message['keyname'] in [elem[0] for elem in current_columns]:
+        # TODO compare if the update message brought new values for a specific keyname or overwrite entries all the time
+        update_query = """UPDATE context_information_keystore SET 
+                        minimum_value = ?,
+                        maximum_value = ?,
+                        desirable_value = ?,
+                        weight = ?,
+                        separatorlist = ? WHERE keyname = ?"""
+        query_params = list(keystore_update_message.values())[2:7]
+        query_params.append('battery_consumption')
+        db_cursor.execute(update_query, query_params)
+        db_connection.commit()
         return
 
-    # TODO abfangen, dass beim Neustart nicht erneut geschrieben wird
-    db_cursor.execute("INSERT INTO context_information_keystore(keyname,mini,maxi,good,weight,seperatorlist) "
+    db_cursor.execute("INSERT INTO context_information_keystore(keyname,minimum_value,maximum_value,desirable_value,weight,separatorlist) "
                       "VALUES (?,?,?,?,?,?)",
                       list(keystore_update_message.values())[1:7])
     db_connection.commit()
