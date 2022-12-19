@@ -1,3 +1,6 @@
+import Client.Countries.country_evaluation as country_evaluation
+import Client.Countries
+
 # TODO set/rethink initial order from lowest to highest
 order = {('fw0', 'id0', 'ac0'): 1,
          ('fw0', 'id0', 'ac1'): 2,
@@ -70,7 +73,7 @@ def reasoning(context_information_dict):
     idl = ['id0', 'id1', 'id2', 'id3']
     acl = ['ac0', 'ac1', 'ac2', 'ac3']
 
-    if context_information_dict["location"] == "russia":
+    if country_evaluation.get_country_code(context_information_dict["location"]) == "Russia":
         fwl.remove('fw0')
         fwl.remove('fw1')
         idl.remove('id0')
