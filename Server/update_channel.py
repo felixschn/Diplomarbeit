@@ -32,15 +32,17 @@ def connection_to_server(port):
 def sending_context_information():
     while True:
 
-        context_information_keystore_update = ciku.ContextInformationKeystoreUpdate('battery_consumption', 0, 50, 0, 1,
-                                                                                    '[5, 10, 15, 20, 25, 35]')
+        context_information_keystore_update_battery_consumption = ciku.ContextInformationKeystoreUpdate(
+            'battery_consumption', 0, 50, 0, 1,
+            '[5, 10, 15, 20, 25, 35]')
+        context_information_keystore_update_battery_state = ciku.ContextInformationKeystoreUpdate('battery_state', 0, 100, 100, 3, '[20, 40, 60, 80]')
 
         try:
             # send message and generate json out of context information object
             sock.send(bytes(
-                json.dumps(context_information_keystore_update.__dict__),
+                json.dumps(context_information_keystore_update_battery_state.__dict__),
                 encoding='utf-8'))
-            print(json.dumps(context_information_keystore_update.__dict__))
+            print(json.dumps(context_information_keystore_update_battery_state.__dict__))
 
             # Receive data from the server and shut down;
             # TODO implement possible server responses
