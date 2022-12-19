@@ -73,7 +73,8 @@ def reasoning(context_information_dict):
     idl = ['id0', 'id1', 'id2', 'id3']
     acl = ['ac0', 'ac1', 'ac2', 'ac3']
 
-    if country_evaluation.get_country_code(context_information_dict["location"]) == "Russia":
+# TODO add a file with a list of untrustworthy or malicious countries and make the comparison dynamic
+    if country_evaluation.get_country_code(context_information_dict["location"]) in country_evaluation.get_malicious_countries():
         fwl.remove('fw0')
         fwl.remove('fw1')
         idl.remove('id0')
