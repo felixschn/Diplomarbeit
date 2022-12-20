@@ -91,12 +91,13 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
                     case 'keystore_update':
                         process_update_messages(received_data_dict)
                     case _:
-                        print('message type is unknown')
-                        print('received data will be ignored')
+                        frameinfo = getframeinfo(currentframe())
+                        print("""\n[ERROR] in""", frameinfo.filename, "in line", frameinfo.lineno, """\n'message type is unknown, received data will be ignored'""")
                         break
 
             except json.JSONDecodeError:
-                print("transformation of received data failed")
+                frameinfo = getframeinfo(currentframe())
+                print("[ERROR] in""", frameinfo.filename, "in line", frameinfo.lineno, """\n'transformation of received data failed'""")
                 break
 
 
