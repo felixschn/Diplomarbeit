@@ -52,41 +52,42 @@ def calculate_weights(context_information_dict) -> tuple[float, float]:
         separator = ast.literal_eval(keystore_dict[key][4])  # .strip('][').split(', ')
 
         distance_keys = ['battery_state', 'charging_station_distance', 'battery_consumption']
+        maximum_value = keystore_dict[key][1]
+        minimum_value = keystore_dict[key][0]
+        desirable_value = keystore_dict[key][2]
+
         if (key in distance_keys) and set(distance_keys).issubset(context_information_dict.keys()):
             if key != distance_keys[0]:
                 continue  # skip other keys so that weight is not calculated multiple times
             weight_sum += distance(context_information_dict['battery_state'],
                                    context_information_dict['charging_station_distance'],
-                                   context_information_dict['battery_consumption'], weight)
+                                   context_information_dict['battery_consumption'], weight, minimum_value, maximum_value, desirable_value)
             pass
 
         else:
-            max = keystore_dict[key][1]
-            min = keystore_dict[key][0]
-            good = keystore_dict[key][2]
-            weight_sum += normalized_weight(context_information_dict[key], min, max, good, weight)
+            weight_sum += normalized_weight(context_information_dict[key], minimum_value, maximum_value, desirable_value, weight)
 
     return weight_sum, max_weight
 
 
-def normalized_weight(value, min, max, good, weight) -> float:
+def normalized_weight(value, minimum_value, maximum_value, desirable_value, weight) -> float:
     # normalizing data because of different values (due to units e.g. 1000km distance vs 75% battery)
-    normalized = (value - min) / (max - min)
+    normalized = (value - minimum_value) / (maximum_value - minimum_value)
 
-    middle = (max - min) / 2
-    if good > middle:
+    middle = (maximum_value - minimum_value) / 2
+    if desirable_value > middle:
         return normalized * weight
     else:
         return (1 - normalized) * weight
 
 
-def distance(charge, distance, consumption, weight) -> float:
+def distance(charge, distance, consumption, weight, minimum_value, maximum_value, desirable_value) -> float:
     # charge                              in   %
     # distance to next charging point     in   km
     # consumption                         in   kWh / 100km
 
     capacity = 100  # in  kWh     TODO: edit param battery capacity or transmit value
-    charge = charge * capacity
+    charge = charge / 100 * capacity
     range = charge / consumption * 100  # estimated range with current consumption
 
     reserve = range / distance
@@ -100,7 +101,7 @@ def distance(charge, distance, consumption, weight) -> float:
     if reserve < 1.2:
         return (reserve - 1) * weight * 0.5  # half weight because the small reserve is still critical # TODO: edit param?
 
-    return normalized_weight(reserve, 1, 50, 50, weight)
+    return normalized_weight(reserve, minimum_value, maximum_value, desirable_value, weight)
 
 
 def choose_option(weight, max_weight, options):
@@ -110,5 +111,5 @@ def choose_option(weight, max_weight, options):
     min_lvl = math.ceil(weight / max_weight * len(Client.reasoning.order))
 
     pos = bisect_left(options, min_lvl, key=lambda x: Client.reasoning.order[x])
-
+    print("position: ", pos)
     return options[pos]  # TODO: testing --> IndexError: list index out of range
