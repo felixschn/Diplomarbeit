@@ -39,8 +39,8 @@ def update_context_information_keystore(keystore_update_message):
     db_cursor = get_cursor()
 
     # create db table if not already present
-    db_cursor.execute(
-        "CREATE TABLE if not exists context_information_keystore(keyname,minimum_value,maximum_value,desirable_value,weight,separatorlist)")
+    create_keystore_query = """CREATE TABLE if not exists context_information_keystore(keyname,minimum_value,maximum_value,desirable_value,weight,separatorlist)"""
+    db_cursor.execute(create_keystore_query)
 
     current_columns = db_cursor.execute("SELECT keyname FROM context_information_keystore").fetchall()
     if len(current_columns) == 0:
@@ -55,15 +55,17 @@ def update_context_information_keystore(keystore_update_message):
                         desirable_value = ?,
                         weight = ?,
                         separatorlist = ? WHERE keyname = ?"""
+
         query_params = list(keystore_update_message.values())[2:7]
         query_params.append('battery_consumption')
         db_cursor.execute(update_query, query_params)
         db_connection.commit()
         return
 
-    db_cursor.execute("INSERT INTO context_information_keystore(keyname,minimum_value,maximum_value,desirable_value,weight,separatorlist) "
-                      "VALUES (?,?,?,?,?,?)",
-                      list(keystore_update_message.values())[1:7])
+    insert_keystore_query = """INSERT INTO context_information_keystore
+                        (keyname,minimum_value,maximum_value,desirable_value,weight,separatorlist) 
+                        VALUES (?,?,?,?,?,?)"""
+    db_cursor.execute(insert_keystore_query, list(keystore_update_message.values())[1:7])
     db_connection.commit()
 
 
@@ -75,12 +77,15 @@ def update_context_information(context_information_message):
     db_cursor.execute(
         "CREATE TABLE if not exists received_context_information(%s)" % ", ".join(context_information_message.keys()))
 
-    # add new column to table if table_attributes comes with additional non exising values
+    # add new column to table if table_attributes comes with additional non-existing values
+    # sqlite alter table command has no if not exists functionality therefore the command is wrapped in try/except
     for item in context_information_message:
         try:
             db_cursor.execute("ALTER TABLE received_context_information ADD COLUMN '%s'" % item)
-        except:
-            print("table column already exist")
+        except sqlite3.OperationalError:
+            # print("table column",item,"already exist")
+            pass
+
     # create adaptive query with respect to the total amount of keys in context_information_values dict
     insert_query_string = "INSERT INTO received_context_information("
 
