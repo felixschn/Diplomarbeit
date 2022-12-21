@@ -13,7 +13,6 @@ HOST = "localhost"
 # range of possible port numbers has to be n-1 with respect to the for loop at def connection to server
 # ...in main.py, otherwise server can listen to port which is never been called from client
 PORT = random.randint(64997, 64999)
-print(PORT)
 time_format = '%Y-%m-%dT%H:%M:%S.%f'
 
 
@@ -30,12 +29,12 @@ def process_context_information_messages(received_data_dict):
     try:
         if datetime.strptime(received_data_dict['elicitation_date'],
                              time_format) > datetime.now() + timedelta(minutes=0):
-            print("Context elicitation error [date from received data is greater than system time]")
-            print("Context data will be ignored")
-            print("------------------------------")
+            print("""[ERROR]: date from received data is greater than system time;
+                Context data will be ignored\n""")
             return
     except:
-        print("timestamp error while comparing system time with received context information")
+        frame_info = getframeinfo(currentframe())
+        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno, """while comparing system time with received context information in""")
         return
 
     # try:
@@ -58,8 +57,8 @@ def process_context_information_messages(received_data_dict):
         best_option = Client.weights.choose_option(weight, max_weight, options)
         print(best_option)
     except TypeError:
-        frameinfo = getframeinfo(currentframe())
-        print("""[ERROR]:weight calculation was not possible in""", frameinfo.filename, "in line:", frameinfo.lineno)
+        frame_info = getframeinfo(currentframe())
+        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno, """weight calculation was not possible""" )
 
     # deserialization of the received byte string back to json for creating
     # table columns out of the dictionary keys
@@ -73,8 +72,8 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
             try:
                 self.data = self.request.recv(1024).strip()
             except:
-                print("...Lost connection to client...")
-                print("...Waiting for reconnection...")
+                print("----Lost connection to client----")
+                print("----Waiting for reconnection----")
                 break
 
             print("{} wrote:".format(
@@ -92,7 +91,7 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
                         process_update_messages(received_data_dict)
                     case _:
                         frameinfo = getframeinfo(currentframe())
-                        print("""\n[ERROR] in""", frameinfo.filename, "in line", frameinfo.lineno, """\n'message type is unknown, received data will be ignored'""")
+                        print("""\n[ERROR] in""", frameinfo.filename, "in line", frameinfo.lineno, """\nmessage type is unknown, received data will be ignored""")
                         break
 
             except json.JSONDecodeError:
@@ -104,8 +103,7 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
 with socketserver.ThreadingTCPServer((HOST, PORT), ConnectionTCPHandler) as server:
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
-    print("Waiting for connection")
+    print("----Waiting for connection at port",PORT,"----")
     server.serve_forever()
-    print('Connection')
 
 # TODO:if I manually stop the run of the programm all client send context information is lost --> example: stopped process after receiving context information with id 32 --> restarted server and received information 39
