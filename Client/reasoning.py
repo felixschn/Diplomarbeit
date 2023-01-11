@@ -1,5 +1,7 @@
 import Client.Countries.country_evaluation as country_evaluation
 import Client.Countries
+import itertools
+import context_information_database
 
 # TODO set/rethink initial order from lowest to highest
 order = {('fw0', 'id0', 'ac0'): 1,
@@ -69,12 +71,33 @@ order = {('fw0', 'id0', 'ac0'): 1,
 
 
 def reasoning(context_information_dict):
+    # get all security mechanism information entries from database
+    security_mechanisms_list = context_information_database.get_security_mechanisms_information()
+    security_modes = {}
+
+    # loop through all entries, create a key for the dict from the mechanism_name, and add all the modes to a list as
+    # values of the dict
+    for (mechanism_name, modes) in security_mechanisms_list:
+        security_modes[f"{mechanism_name}_list"] = []
+        for mode in range(modes):
+            security_modes[f"{mechanism_name}_list"].append(mechanism_name + f"{mode}")
+
+    # get the values (which are the lists) from the dict through unzipping
+    _, values = zip(*security_modes.items())
+
+    # calculate all possible permutations of the elements of the lists
+    container_dict = [v for v in itertools.product(*values)]
+
     fwl = ['fw0', 'fw1', 'fw2', 'fw3']
     idl = ['id0', 'id1', 'id2', 'id3']
     acl = ['ac0', 'ac1', 'ac2', 'ac3']
 
-# compare the received country code with the list of the existing countries and compare the particular one with a list of malicious nations
-    if country_evaluation.get_country_code(context_information_dict["location"]) in country_evaluation.get_malicious_countries():
+    # for element in itertools.product(fwl, idl, acl):
+    # print(element)
+    # compare the received country code with the list of the existing countries and compare the particular one with a list of malicious nations
+    if country_evaluation.get_country_code(
+            context_information_dict["location"]) in country_evaluation.get_malicious_countries():
+        print("dangerous location found!")
         fwl.remove('fw0')
         fwl.remove('fw1')
         idl.remove('id0')
