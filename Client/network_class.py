@@ -21,6 +21,9 @@ def process_update_messages(received_data_dict):
     # table columns out of the dictionary keys
     context_information_database.update_context_information_keystore(received_data_dict)
 
+def process_security_mechanism_information(received_data_dict):
+    context_information_database.update_context_information_security_mechanisms_information(received_data_dict)
+
 
 def process_context_information_messages(received_data_dict):
     global weight, max_weight
@@ -56,6 +59,7 @@ def process_context_information_messages(received_data_dict):
     try:
         weight, max_weight = Client.weights.calculate_weights(received_data_dict)
         received_data_dict['weight'] = weight
+        print("calculated weight: ", weight)
     except TypeError:
         frame_info = getframeinfo(currentframe())
         print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
@@ -99,6 +103,8 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
                         process_context_information_messages(received_data_dict)
                     case 'keystore_update':
                         process_update_messages(received_data_dict)
+                    case 'security_mechanisms_information':
+                        process_security_mechanism_information(received_data_dict)
                     case _:
                         frameinfo = getframeinfo(currentframe())
                         print("""\n[ERROR] in""", frameinfo.filename, "in line", frameinfo.lineno,

@@ -4,6 +4,7 @@ import socket
 import time
 
 import Server.context_information_keystore_update as ciku
+import Server.context_information_security_mechanisms_informaiton as cismi
 
 sock = None
 
@@ -30,22 +31,21 @@ def connection_to_server(port):
     return False
 
 
-
+# object creation
 # TODO somehow the identifier count in steps of two
 context_information_keystore_update_battery_consumption = ciku.ContextInformationKeystoreUpdate(
     'battery_consumption', 0, 100, 5, 15,
     '[5, 10, 15, 20, 25, 35]')
-
 context_information_keystore_update_battery_state = ciku.ContextInformationKeystoreUpdate('battery_state', 0, 100, 100, 5, '[20, 40, 60, 80]')
-
 context_information_keystore_update_charging_station_distance = ciku.ContextInformationKeystoreUpdate('charging_station_distance', 0, 500, 0, 5, '[0,100,200,300,400,500]')
+context_information_security_mechanisms_information = cismi.ContextInformationSecurityMechanismsInformation('firewall', 30)
 
 def sending_context_information():
     while True:
         try:
             random_choice = random.randint(1,3)
             # send message and generate json out of context information object
-            match random.randint(1,3):
+            match random.randint(1,4):
                 case 1:
                     sock.send(bytes(
                         json.dumps(context_information_keystore_update_battery_consumption.__dict__),
@@ -61,6 +61,10 @@ def sending_context_information():
                         json.dumps(context_information_keystore_update_charging_station_distance.__dict__),
                         encoding='utf-8'))
                     print(json.dumps(context_information_keystore_update_charging_station_distance.__dict__))
+                case 4:
+                    sock.send(bytes(
+                        json.dumps(context_information_security_mechanisms_information.__dict__), encoding='utf-8'))
+                    print(json.dumps(context_information_security_mechanisms_information.__dict__))
 
 
             # Receive data from the server and shut down;
