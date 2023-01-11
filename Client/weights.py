@@ -46,7 +46,7 @@ def calculate_weights(context_information_dict) -> tuple[float, float]:
             continue
 
         weight = keystore_dict[key][3]
-        max_weight += weight
+
 
         # TODO:  further evaluation take string form database with separators and build list out of string
         separator = ast.literal_eval(keystore_dict[key][4])  # .strip('][').split(', ')
@@ -62,10 +62,13 @@ def calculate_weights(context_information_dict) -> tuple[float, float]:
             weight_sum += distance(context_information_dict['battery_state'],
                                    context_information_dict['charging_station_distance'],
                                    context_information_dict['battery_consumption'], weight, minimum_value, maximum_value, desirable_value)
+            max_weight += weight
             pass
 
         else:
             weight_sum += normalized_weight(context_information_dict[key], minimum_value, maximum_value, desirable_value, weight)
+            max_weight += weight
+
 
     return weight_sum, max_weight
 
@@ -74,10 +77,12 @@ def normalized_weight(value, minimum_value, maximum_value, desirable_value, weig
     # normalizing data because of different values (due to units e.g. 1000km distance vs 75% battery)
     normalized = (value - minimum_value) / (maximum_value - minimum_value)
 
+    # only to see if the value is more on the left or on the right of the scale
     middle = (maximum_value - minimum_value) / 2
     if desirable_value > middle:
         return normalized * weight
     else:
+        # when left then subtract normalized value from 1
         return (1 - normalized) * weight
 
 
@@ -87,6 +92,8 @@ def distance(charge, distance, consumption, weight, minimum_value, maximum_value
     # consumption                         in   kWh / 100km
 
     capacity = 100  # in  kWh     TODO: edit param battery capacity or transmit value
+    max_reserve = 3
+    min_reserve = 1
     charge = charge / 100 * capacity
     range = charge / consumption * 100  # estimated range with current consumption
 
@@ -96,18 +103,29 @@ def distance(charge, distance, consumption, weight, minimum_value, maximum_value
     # 1 > reserve        is catastrophic
 
     if reserve < 1:
+        print("reserve is critical")
         return 0.0  # TODO or maybe even negative numbers?
 
+
     if reserve < 1.2:
+        print("reserve is dangerous")
         return (reserve - 1) * weight * 0.5  # half weight because the small reserve is still critical # TODO: edit param?
 
-    return normalized_weight(reserve, minimum_value, maximum_value, desirable_value, weight)
+    if reserve > max_reserve:
+        return weight
+
+
+    print("reserve is good")
+    return normalized_weight(reserve, min_reserve, max_reserve, max_reserve, weight)
 
 
 def choose_option(weight, max_weight, options):
     # easiest way
     # return options[math.ceil(weight / max_weight) * len(options)]
 
+    # TODO check if calculation is correct when potential order list is small because of a dangerous country in the
+    #  received data --> when list is small it is hard to reach a min_lvl greater then 1, so most of the time the
+    #  output will be 0
     min_lvl = math.ceil(weight / max_weight * len(Client.reasoning.order))
 
     pos = bisect_left(options, min_lvl, key=lambda x: Client.reasoning.order[x])
