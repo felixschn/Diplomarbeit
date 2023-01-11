@@ -33,7 +33,7 @@ def connection_to_server(port):
 
 def sending_context_information():
     while True:
-        # create context information object
+        # create context information object in while loop to generate a new random object for each packet
         context_information = cic.ContextInformationCreation(
             cic.ContextInformationCreation.battery_information(),
             cic.ContextInformationCreation.distance_generator(),
@@ -45,10 +45,9 @@ def sending_context_information():
             cice.ContextInformationCreationExtended.battery_information(),
             "good",
             cice.ContextInformationCreationExtended.distance_generator(),
-            cice.ContextInformationCreationExtended.location_generator(),
+            125,
             datetime.now().strftime(time_format)
         )
-
 
         try:
             # send message and generate json out of context information object
@@ -56,10 +55,6 @@ def sending_context_information():
                 json.dumps(context_information_extended.__dict__),
                 encoding='utf-8'))
             print(json.dumps(context_information_extended.__dict__))
-
-            # Receive data from the server and shut down;
-            # TODO implement possible server responses
-            # received = str(sock.recv(1024), "utf-8")
 
             # adjust time to send less or more messages
             time.sleep(10)

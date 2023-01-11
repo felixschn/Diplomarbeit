@@ -1,6 +1,6 @@
-import Client.Countries.country_evaluation as country_evaluation
-import Client.Countries
 import itertools
+
+import Client.Countries.country_evaluation as country_evaluation
 import context_information_database
 
 # TODO set/rethink initial order from lowest to highest
@@ -92,11 +92,9 @@ def reasoning(context_information_dict):
     idl = ['id0', 'id1', 'id2', 'id3']
     acl = ['ac0', 'ac1', 'ac2', 'ac3']
 
-    # for element in itertools.product(fwl, idl, acl):
-    # print(element)
     # compare the received country code with the list of the existing countries and compare the particular one with a list of malicious nations
-    if country_evaluation.get_country_code(
-            context_information_dict["location"]) in country_evaluation.get_malicious_countries():
+    if country_evaluation.get_country_code(context_information_dict["location"]) in country_evaluation.get_malicious_countries():
+        # TODO has to be dynamic
         print("dangerous location found!")
         fwl.remove('fw0')
         fwl.remove('fw1')
@@ -110,6 +108,7 @@ def reasoning(context_information_dict):
     return permute_options(fwl, idl, acl)
 
 
+# create permutations for the hard-coded options list from above; this can be done more easily with itertools
 def permute_options(fwl, idl, acl):
     possible_protection_settings = []
     for fw in range(len(fwl)):
@@ -122,8 +121,8 @@ def permute_options(fwl, idl, acl):
             idl = idl[1:]
         fwl.append(fwl[0])
         fwl = fwl[1:]
-    possible_protection_settings = list(dict.fromkeys(possible_protection_settings))  # remove duplicates
 
+    possible_protection_settings = list(dict.fromkeys(possible_protection_settings))  # remove duplicates
     possible_protection_settings = sorted(possible_protection_settings, key=lambda x: order[x])
 
     return possible_protection_settings

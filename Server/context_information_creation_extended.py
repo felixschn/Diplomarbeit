@@ -2,7 +2,7 @@ import random
 from dataclasses import dataclass, field
 from itertools import count
 
-
+# class to create extended context information packet for simulation purposes
 @dataclass
 class ContextInformationCreationExtended():
     # get unique identifier for each object

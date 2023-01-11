@@ -15,8 +15,8 @@ def connection_to_server(port):
     global sock
     # TODO check behaviour if server is closed during connection and vice versa
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # Connect to server and send data
 
+    # Connect to server and send data
     try:
         sock.connect((HOST, port))
         # sock.sendall(bytes(data + "\n", "utf-8"))
@@ -31,21 +31,25 @@ def connection_to_server(port):
     return False
 
 
-# object creation
+# creating objects which can be send over the established connection
 # TODO somehow the identifier count in steps of two
 context_information_keystore_update_battery_consumption = ciku.ContextInformationKeystoreUpdate(
     'battery_consumption', 0, 100, 5, 15,
     '[5, 10, 15, 20, 25, 35]')
-context_information_keystore_update_battery_state = ciku.ContextInformationKeystoreUpdate('battery_state', 0, 100, 100, 5, '[20, 40, 60, 80]')
-context_information_keystore_update_charging_station_distance = ciku.ContextInformationKeystoreUpdate('charging_station_distance', 0, 500, 0, 5, '[0,100,200,300,400,500]')
-context_information_security_mechanisms_information = cismi.ContextInformationSecurityMechanismsInformation('firewall', 30)
+
+context_information_keystore_update_battery_state = ciku.ContextInformationKeystoreUpdate('battery_state', 0, 100, 100,
+                                                                                          5, '[20, 40, 60, 80]')
+context_information_keystore_update_charging_station_distance = ciku.ContextInformationKeystoreUpdate(
+    'charging_station_distance', 0, 500, 0, 5, '[0,100,200,300,400,500]')
+
+context_information_security_mechanisms_information = cismi.ContextInformationSecurityMechanismsInformation('firewall', 3)
+
 
 def sending_context_information():
     while True:
         try:
-            random_choice = random.randint(1,3)
-            # send message and generate json out of context information object
-            match random.randint(1,4):
+            # send messages randomly and generate json objects out of various objects
+            match random.randint(1, 4):
                 case 1:
                     sock.send(bytes(
                         json.dumps(context_information_keystore_update_battery_consumption.__dict__),
@@ -66,11 +70,6 @@ def sending_context_information():
                         json.dumps(context_information_security_mechanisms_information.__dict__), encoding='utf-8'))
                     print(json.dumps(context_information_security_mechanisms_information.__dict__))
 
-
-            # Receive data from the server and shut down;
-            # TODO implement possible server responses
-            # received = str(sock.recv(1024), "utf-8")
-
             # adjust time to send less or more messages
             time.sleep(5)
 
@@ -84,7 +83,9 @@ if __name__ == '__main__':
     HOST = '127.0.0.1'
     time_format = '%Y-%m-%dT%H:%M:%S.%f'
     while True:
+        # simulate trivial port scan
         for port in range(64997, 65000):
+            # create connection and sending information
             if connection_to_server(port):
                 sending_context_information()
             else:
