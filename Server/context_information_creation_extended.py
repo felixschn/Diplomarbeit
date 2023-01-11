@@ -27,7 +27,7 @@ class ContextInformationCreationExtended():
 
     @staticmethod
     def distance_generator() -> float:
-        return round(random.uniform(0.00, 999.99), 2)
+        return round(random.uniform(0.01, 99.99), 2)
 
     @staticmethod
     def location_generator() -> int:
