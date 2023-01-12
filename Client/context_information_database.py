@@ -1,5 +1,5 @@
 import sqlite3
-
+import json
 from urllib.request import pathname2url
 
 db_connection: sqlite3.dbapi2 = None
@@ -39,32 +39,44 @@ def get_latest_date_entry(table_name) -> str:
 
 def get_security_mechanisms_information() -> list:
     db_cursor = get_cursor()
-    db_query = "SELECT * FROM  context_information_security_mechanims_information"
+    db_query = "SELECT * FROM  security_mechanisms_information"
     return db_cursor.execute(db_query).fetchall()
 
 
-def update_context_information_security_mechanisms_information(mechanisms_information_update_message):
+def update_security_mechanisms_information(mechanisms_information_update_message):
     db_cursor = get_cursor()
-    create_mechanisms_information_query = """CREATE TABLE if not exists context_information_security_mechanims_information(mechanism_name, modes)"""
+    # create table for security_mechanisms_information
+    create_mechanisms_information_query = """CREATE TABLE if not exists security_mechanisms_information(mechanism_name, modes, mode_values)"""
     db_cursor.execute(create_mechanisms_information_query)
 
-    current_columns = db_cursor.execute("SELECT mechanism_name from context_information_security_mechanims_information ").fetchall()
+    # serialize mode_values because SQLite can't store lists; see:
+    # https://stackoverflow.com/questions/20444155/python-proper-way-to-store-list-of-strings-in-sqlite3-or-mysql
+    mechanisms_information_update_message['mode_values'] = json.dumps(mechanisms_information_update_message['mode_values'])
 
+    # get the mechanism_name from the database table and check if entry already exists
+    current_columns = db_cursor.execute("SELECT mechanism_name from security_mechanisms_information ").fetchall()
+    # if an entry does not exist, create one
     if len(current_columns) == 0:
         pass
-
+    # otherwise, update the existing entry
     elif mechanisms_information_update_message['mechanism_name'] in [elem[0] for elem in current_columns]:
-        update_query = """UPDATE context_information_security_mechanims_information SET modes = ? WHERE mechanism_name = ?"""
-        query_params = list(mechanisms_information_update_message.values())[:2]
-        db_cursor.execute(update_query, list(reversed(query_params)))
+        update_query = """UPDATE security_mechanisms_information SET modes = ?, mode_values = ? WHERE mechanism_name = ?"""
+
+        # get values name, mode, mode_values from the dict
+        query_params = list(mechanisms_information_update_message.values())[:3]
+        # get the name attribute and store it in a separate variable in order to match the update_query requirements, where name has to be the last parameter
+        list_element = query_params[0]
+        # remove the name from the list and append it at the end
+        query_params = [x for x in query_params if x != list_element] + [list_element]
+
+        db_cursor.execute(update_query, query_params)
         db_connection.commit()
         return
 
-    insert_mechanisms_information_query = """INSERT INTO context_information_security_mechanims_information
-                                    (mechanism_name, modes) 
-                                    VALUES (?,?)"""
-
-    query_params = list(mechanisms_information_update_message.values())[:2]
+    insert_mechanisms_information_query = """INSERT INTO security_mechanisms_information
+                                    (mechanism_name, modes, mode_values) 
+                                    VALUES (?, ?, ?)"""
+    query_params = list(mechanisms_information_update_message.values())[:3]
     db_cursor.execute(insert_mechanisms_information_query, query_params)
     db_connection.commit()
     return
