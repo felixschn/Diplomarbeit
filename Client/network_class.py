@@ -22,7 +22,7 @@ def process_update_messages(received_data_dict):
 
 
 def process_security_mechanism_information(received_data_dict):
-    context_information_database.update_context_information_security_mechanisms_information(received_data_dict)
+    context_information_database.update_security_mechanisms_information(received_data_dict)
 
 
 def process_context_information_messages(received_data_dict):
@@ -121,4 +121,4 @@ with socketserver.ThreadingTCPServer((HOST, PORT), ConnectionTCPHandler) as serv
     print("---- Waiting for connection at port", PORT, "----")
     server.serve_forever()
 
-# TODO:if I manually stop the run of the programm all client send context information is lost --> example: stopped process after receiving context information with id 32 --> restarted server and received information 39
+# TODO: if I manually stop the run of the programm all client send context information is lost --> example: stopped process after receiving context information with id 32 --> restarted server and received information 39

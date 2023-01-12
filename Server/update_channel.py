@@ -4,7 +4,7 @@ import socket
 import time
 
 import Server.context_information_keystore_update as ciku
-import Server.context_information_security_mechanisms_informaiton as cismi
+import Server.security_mechanisms_informaiton as cismi
 
 sock = None
 
@@ -42,7 +42,7 @@ context_information_keystore_update_battery_state = ciku.ContextInformationKeyst
 context_information_keystore_update_charging_station_distance = ciku.ContextInformationKeystoreUpdate(
     'charging_station_distance', 0, 500, 0, 5, '[0,100,200,300,400,500]')
 
-context_information_security_mechanisms_information = cismi.ContextInformationSecurityMechanismsInformation('firewall', 3)
+context_information_security_mechanisms_information = cismi.SecurityMechanismsInformation('firewall', 3, [0,1,2])
 
 
 def sending_context_information():
