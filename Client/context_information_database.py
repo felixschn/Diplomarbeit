@@ -1,5 +1,5 @@
-import sqlite3
 import json
+import sqlite3
 from urllib.request import pathname2url
 
 db_connection: sqlite3.dbapi2 = None
@@ -40,6 +40,14 @@ def get_latest_date_entry(table_name) -> str:
 def get_security_mechanisms_information() -> list:
     db_cursor = get_cursor()
     db_query = "SELECT * FROM  security_mechanisms_information"
+    query_result = db_cursor.execute(db_query).fetchall()
+    result_list = []
+    for mode_element in query_result:
+        mode_element_list = list(mode_element)
+        mode_element_list[2] = json.loads(mode_element[2])
+        result_list.append(mode_element_list)
+
+    #return result_list
     return db_cursor.execute(db_query).fetchall()
 
 
