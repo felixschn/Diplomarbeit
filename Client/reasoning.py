@@ -1,92 +1,50 @@
 import itertools
+import json
+from inspect import getframeinfo, currentframe
 
 import Client.Countries.country_evaluation as country_evaluation
 import context_information_database
 
-# TODO set/rethink initial order from lowest to highest
-order = {('fw0', 'id0', 'ac0'): 1,
-         ('fw0', 'id0', 'ac1'): 2,
-         ('fw0', 'id0', 'ac2'): 3,
-         ('fw0', 'id0', 'ac3'): 4,
-         ('fw0', 'id1', 'ac0'): 5,
-         ('fw0', 'id1', 'ac1'): 6,
-         ('fw0', 'id1', 'ac2'): 7,
-         ('fw0', 'id1', 'ac3'): 8,
-         ('fw0', 'id2', 'ac0'): 9,
-         ('fw0', 'id2', 'ac1'): 10,
-         ('fw0', 'id2', 'ac2'): 11,
-         ('fw0', 'id2', 'ac3'): 12,
-         ('fw0', 'id3', 'ac0'): 13,
-         ('fw0', 'id3', 'ac1'): 14,
-         ('fw0', 'id3', 'ac2'): 15,
-         ('fw0', 'id3', 'ac3'): 16,
-         ('fw1', 'id0', 'ac0'): 17,
-         ('fw1', 'id0', 'ac1'): 18,
-         ('fw1', 'id0', 'ac2'): 19,
-         ('fw1', 'id0', 'ac3'): 20,
-         ('fw1', 'id1', 'ac0'): 21,
-         ('fw1', 'id1', 'ac1'): 22,
-         ('fw1', 'id1', 'ac2'): 23,
-         ('fw1', 'id1', 'ac3'): 24,
-         ('fw1', 'id2', 'ac0'): 25,
-         ('fw1', 'id2', 'ac1'): 26,
-         ('fw1', 'id2', 'ac2'): 27,
-         ('fw1', 'id2', 'ac3'): 28,
-         ('fw1', 'id3', 'ac0'): 29,
-         ('fw1', 'id3', 'ac1'): 30,
-         ('fw1', 'id3', 'ac2'): 31,
-         ('fw1', 'id3', 'ac3'): 32,
-         ('fw2', 'id0', 'ac0'): 33,
-         ('fw2', 'id0', 'ac1'): 34,
-         ('fw2', 'id0', 'ac2'): 35,
-         ('fw2', 'id0', 'ac3'): 36,
-         ('fw2', 'id1', 'ac0'): 37,
-         ('fw2', 'id1', 'ac1'): 38,
-         ('fw2', 'id1', 'ac2'): 39,
-         ('fw2', 'id1', 'ac3'): 40,
-         ('fw2', 'id2', 'ac0'): 41,
-         ('fw2', 'id2', 'ac1'): 42,
-         ('fw2', 'id2', 'ac2'): 43,
-         ('fw2', 'id2', 'ac3'): 44,
-         ('fw2', 'id3', 'ac0'): 45,
-         ('fw2', 'id3', 'ac1'): 46,
-         ('fw2', 'id3', 'ac2'): 47,
-         ('fw2', 'id3', 'ac3'): 48,
-         ('fw3', 'id0', 'ac0'): 49,
-         ('fw3', 'id0', 'ac1'): 50,
-         ('fw3', 'id0', 'ac2'): 51,
-         ('fw3', 'id0', 'ac3'): 52,
-         ('fw3', 'id1', 'ac0'): 53,
-         ('fw3', 'id1', 'ac1'): 54,
-         ('fw3', 'id1', 'ac2'): 55,
-         ('fw3', 'id1', 'ac3'): 56,
-         ('fw3', 'id2', 'ac0'): 57,
-         ('fw3', 'id2', 'ac1'): 58,
-         ('fw3', 'id2', 'ac2'): 59,
-         ('fw3', 'id2', 'ac3'): 60,
-         ('fw3', 'id3', 'ac0'): 61,
-         ('fw3', 'id3', 'ac1'): 62,
-         ('fw3', 'id3', 'ac2'): 63,
-         ('fw3', 'id3', 'ac3'): 64}
+combination_cost = {}
 
 
-def reasoning(context_information_dict):
+# function to create all possible permutations of all security mechanisms
+def create_all_possible_permutations(context_information_dict):
     # get all security mechanism information entries from database
     security_mechanisms_list = context_information_database.get_security_mechanisms_information()
     security_modes = {}
-
+    security_mode_costs = {}
     # loop through all entries, create a key for the dict from the mechanism_name, and add all the modes to a list as
     # values of the dict
-    for (mechanism_name, modes) in security_mechanisms_list:
+    for (mechanism_name, modes, mode_values) in security_mechanisms_list:
+        mode_values = json.loads(mode_values)
         security_modes[f"{mechanism_name}_list"] = []
         for mode in range(modes):
-            security_modes[f"{mechanism_name}_list"].append(mechanism_name + f"{mode}")
+            try:
+                security_modes[f"{mechanism_name}_list"].append(mechanism_name + f"{mode}")
+                security_mode_costs[mechanism_name + f"{mode}"] = mode_values[mode]
+            except IndexError:
+                frame_info = getframeinfo(currentframe())
+                print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
+                      """creating security_mode or security_mode_list failed; create_all_possible_permutations is not possible\n fix security mechanism information through update message""")
+                return
 
     # get the values (which are the lists) from the dict through unzipping
     _, values = zip(*security_modes.items())
 
     # calculate all possible permutations of the elements of the lists
-    container_dict = [v for v in itertools.product(*values)]
+    # container_list = [sorted(set(v)) for v in itertools.product(*values)]
+    container_list = [v for v in itertools.product(*values)]
+
+    global combination_cost
+    for list_element in container_list:
+        sum = 0
+        for elem in list_element:
+            sum = sum + security_mode_costs[elem]
+        combination_cost[list_element] = sum
+
+        # sort dict after values to get an order of the security mechanism combination costs
+    combination_cost = dict(sorted(combination_cost.items(), key=lambda item: item[1]))
 
     fwl = ['fw0', 'fw1', 'fw2', 'fw3']
     idl = ['id0', 'id1', 'id2', 'id3']
@@ -103,13 +61,14 @@ def reasoning(context_information_dict):
         acl.remove('ac0')
         acl.remove('ac1')
         acl.remove('ac2')
-    # TODO: add extended logic
 
-    return permute_options(fwl, idl, acl)
+    return combination_cost.keys()
 
+
+# TODO function where filter reduces amount of permutations with respect to specific context inforamtion
 
 # create permutations for the hard-coded options list from above; this can be done more easily with itertools
-def permute_options(fwl, idl, acl):
+def permute_options(fwl, idl, acl) -> list:
     possible_protection_settings = []
     for fw in range(len(fwl)):
         for id in range(len(idl)):
