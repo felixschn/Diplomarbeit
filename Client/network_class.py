@@ -22,6 +22,13 @@ def process_update_messages(received_data_dict):
 
 
 def process_security_mechanism_information(received_data_dict):
+    # check if the number of mode_values and modes is not equal
+    if received_data_dict['modes'] != len(received_data_dict['mode_values']):
+        frame_info = getframeinfo(currentframe())
+        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
+              """update message for security_mechanism_information: the number of modes and mode values are not equal""")
+        return
+
     context_information_database.update_security_mechanisms_information(received_data_dict)
 
 
@@ -52,7 +59,7 @@ def process_context_information_messages(received_data_dict):
         print("timestamp error while comparing the latest database entry with received context information")
 
     # evaluate possible set of security mechanisms with respect to data origin (country) and other params which has to be implemented
-    options = Client.reasoning.reasoning(received_data_dict)
+    options = Client.reasoning.create_all_possible_permutations(received_data_dict)
 
     try:
         weight, max_weight = Client.weights.calculate_weights(received_data_dict)
@@ -64,7 +71,7 @@ def process_context_information_messages(received_data_dict):
         print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno, """weight calculation was not possible""")
 
     try:
-        best_option = Client.weights.choose_option(weight, max_weight, options)
+        best_option = Client.weights.choose_option(weight, max_weight, list(options))
         print(best_option, "\n")
         received_data_dict['best_option'] = str(best_option)
 
