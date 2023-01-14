@@ -18,6 +18,7 @@ import Client.reasoning
 #                                  "location": 41, "elicitation_date": "2022-12-13T19:47:40.996571"}
 
 
+# TODO rename functions
 def calculate_weights(context_information_dict) -> tuple[float, float]:
     # create database cursor
     db_cursor = cid.get_cursor()
@@ -82,15 +83,20 @@ def calculate_weights(context_information_dict) -> tuple[float, float]:
     return weight_sum, max_weight
 
 
+# TODO rename functions
 def normalized_weight(value, minimum_value, maximum_value, desirable_value, weight) -> float:
     # normalizing data because of different values (due to units e.g. 1000km distance vs 75% battery)
-    normalized = (value - minimum_value) / (maximum_value - minimum_value)
-
     # only to see if the value is more on the left or on the right of the scale
     middle = (maximum_value - minimum_value) / 2
     if desirable_value > middle:
+        if value > desirable_value:
+            return weight
+        normalized = (value - minimum_value) / (desirable_value - minimum_value)
         return normalized * weight
     else:
+        if value < desirable_value:
+            return weight
+        normalized = (value - desirable_value) / (maximum_value - desirable_value)
         # when left then subtract normalized value from 1
         return (1 - normalized) * weight
 
@@ -137,7 +143,16 @@ def choose_option(weight, max_weight, options):
     # calculate the resulted weight's position; a set of possible options is portioned on a scale, i.e., if only a subset of the possible options is
     # available, they are divided on the scale with their specific values.That means, if the min_lvl is, for example, 7, and there are only 4 options with
     # values greater than 7, the position will be 0
-    min_lvl = math.ceil(weight / max_weight * len(Client.reasoning.order))
-    pos = bisect_left(options, min_lvl, key=lambda x: Client.reasoning.order[x])
-    print("position: ", pos)
-    return options[pos]  # TODO: testing --> IndexError: list index out of range
+
+    # TODO weight calculation test, if position is right way to choose an option or if we should go for the max value
+    min_lvl = math.ceil(weight / max_weight * len(Client.reasoning.combination_cost))
+    min_lvl_2 = math.ceil(weight / max_weight * max(Client.reasoning.combination_cost.values()))
+    print("min_lvl1: ", min_lvl)
+    print("min_lvl2: ", min_lvl_2)
+    print("level difference: ", min_lvl_2 - min_lvl)
+
+    pos_lvl1 = bisect_left(options, min_lvl, key=lambda x: Client.reasoning.combination_cost[x])
+    pos_lvl2 = bisect_left(options, min_lvl_2, key=lambda x: Client.reasoning.combination_cost[x])
+    print("position lvl 1: ", pos_lvl1)
+    print("position lvl 2: ", pos_lvl2)
+    return options[pos_lvl2]  # TODO: testing --> IndexError: list index out of range
