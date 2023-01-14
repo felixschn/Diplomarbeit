@@ -22,8 +22,8 @@ class ContextInformationCreationExtended():
     message_type: str = field(default='context_information')
 
     @staticmethod
-    def battery_information() -> int:
-        return random.randint(0, 99)
+    def battery_information() -> float:
+        return random.uniform(0.01, 99.00)
 
     @staticmethod
     def distance_generator() -> float:
