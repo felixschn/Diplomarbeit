@@ -37,18 +37,21 @@ def get_latest_date_entry(table_name) -> str:
     return db_cursor.execute(max_date_query).fetchall()[0][0]
 
 
+# get all the information about security mechanisms from the database
 def get_security_mechanisms_information() -> list:
     db_cursor = get_cursor()
-    db_query = "SELECT * FROM  security_mechanisms_information"
-    query_result = db_cursor.execute(db_query).fetchall()
-    result_list = []
-    for mode_element in query_result:
-        mode_element_list = list(mode_element)
-        mode_element_list[2] = json.loads(mode_element[2])
-        result_list.append(mode_element_list)
+    db_query = "SELECT * FROM security_mechanisms_information"
 
-    #return result_list
     return db_cursor.execute(db_query).fetchall()
+
+
+# get all filters for the security mechanisms from the database
+def get_security_mechanisms_filter() -> list:
+    db_cursor = get_cursor()
+    db_query = "SELECT * FROM security_mechanisms_filter"
+
+    return db_cursor.execute(db_query).fetchall()
+
 
 
 def update_security_mechanisms_information(mechanisms_information_update_message):
