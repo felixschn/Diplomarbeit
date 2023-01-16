@@ -17,12 +17,17 @@ def create_all_possible_permutations(context_information_dict):
     # loop through all entries, create a key for the dict from the mechanism_name, and add all the modes to a list as
     # values of the dict
     for (mechanism_name, modes, mode_values) in security_mechanisms_list:
+        # deserialize mode_values from database table security_mechanism_information
         mode_values = json.loads(mode_values)
+        # create a list of security modes with dynamic names
         security_modes[f"{mechanism_name}_list"] = []
         for mode in range(modes):
             try:
                 security_modes[f"{mechanism_name}_list"].append(mechanism_name + f"{mode}")
+
+                # create a dictionary with the security mechanism mode as the key and the cost as the value
                 security_mode_costs[mechanism_name + f"{mode}"] = mode_values[mode]
+
             except IndexError:
                 frame_info = getframeinfo(currentframe())
                 print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
@@ -43,12 +48,11 @@ def create_all_possible_permutations(context_information_dict):
             sum = sum + security_mode_costs[elem]
         combination_cost[list_element] = sum
 
-        # sort dict after values to get an order of the security mechanism combination costs
+    # sort dict after values to get an order of the security mechanism combination costs
     combination_cost = dict(sorted(combination_cost.items(), key=lambda item: item[1]))
 
-    fwl = ['fw0', 'fw1', 'fw2', 'fw3']
-    idl = ['id0', 'id1', 'id2', 'id3']
-    acl = ['ac0', 'ac1', 'ac2', 'ac3']
+    # TODO create the funtionality to send a update message with different information about reducing the modes, i.e. if car is located in dangerous country
+    #  then only specific firewall combination can be choosen; this has to be dynamic --> call it filter and give information which modes has to be deployed
 
     # compare the received country code with the list of the existing countries and compare the particular one with a list of malicious nations
     if country_evaluation.get_country_code(context_information_dict["location"]) in country_evaluation.get_malicious_countries():
