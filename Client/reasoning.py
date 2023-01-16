@@ -8,6 +8,28 @@ import context_information_database
 combination_cost = {}
 
 
+def filter(mode_list, context_information_dict) -> tuple:
+    available_filters = context_information_database.get_security_mechanisms_filter()
+
+    # check for any filter in the databse
+    for (filter_name, necessary_modes) in available_filters:
+        # TODO implement checks for the filter for example the country evaluation and made it dynamic for further filter
+        # deserialize list from database
+        necessary_modes = json.loads(necessary_modes)
+        # all_modes_list = [item for sublist in mode_list for item in sublist]
+
+        # get the lists of security mechanisms contained within the tuple
+        for mechanism in [mechanism_elem for mechanism_elem in mode_list]:
+            # loop through the particular mechanism list
+            for mode_elem in mechanism:
+                if mode_elem in necessary_modes:
+                    break
+                # remove the security modes that are not fulfilling the requirements
+                mode_list = [[elem for elem in sub if elem != mode_elem] for sub in mode_list]
+
+    return mode_list
+
+
 # function to create all possible permutations of all security mechanisms
 def create_all_possible_permutations(context_information_dict):
     # get all security mechanism information entries from database
@@ -36,6 +58,8 @@ def create_all_possible_permutations(context_information_dict):
 
     # get the values (which are the lists) from the dict through unzipping
     _, values = zip(*security_modes.items())
+
+    filter(values, context_information_dict)
 
     # calculate all possible permutations of the elements of the lists
     # container_list = [sorted(set(v)) for v in itertools.product(*values)]
