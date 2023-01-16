@@ -90,6 +90,42 @@ def update_security_mechanisms_information(mechanisms_information_update_message
     return
 
 
+
+def update_security_mechanisms_filter(security_mechanisms_filter_message):
+    db_cursor = get_cursor()
+
+    create_filter_query = """CREATE TABLE if not exists security_mechanisms_filter(filter_name, necessary_modes)"""
+    db_cursor.execute(create_filter_query)
+
+    # serialize mode_values because SQLite can't store lists; see:
+    # https://stackoverflow.com/questions/20444155/python-proper-way-to-store-list-of-strings-in-sqlite3-or-mysql
+    security_mechanisms_filter_message['necessary_modes'] = json.dumps(security_mechanisms_filter_message['necessary_modes'])
+
+    current_columns = db_cursor.execute("SELECT filter_name FROM security_mechanisms_filter").fetchall()
+    if len(current_columns) == 0:
+        pass
+
+    elif security_mechanisms_filter_message['filter_name'] in [elem[0] for elem in current_columns]:
+        update_query = """UPDATE security_mechanisms_filter SET
+                        necessary_modes = ? WHERE filter_name = ?"""
+
+        # get values name, mode, mode_values from the dict
+        query_params = list(security_mechanisms_filter_message.values())[:2]
+        # get the name attribute and store it in a separate variable in order to match the update_query requirements, where name has to be the last parameter
+        list_element = query_params[0]
+        # remove the name from the list and append it at the end
+        query_params = [x for x in query_params if x != list_element] + [list_element]
+        db_cursor.execute(update_query, query_params)
+        db_connection.commit()
+        return
+
+    insert_filter_query = """INSERT INTO security_mechanisms_filter (filter_name, necessary_modes) VALUES (?, ?)"""
+    query_params = list(security_mechanisms_filter_message.values())[:2]
+    db_cursor.execute(insert_filter_query, query_params)
+    db_connection.commit()
+    return
+
+
 def update_context_information_keystore(keystore_update_message):
     # global db_connection
     db_cursor = get_cursor()

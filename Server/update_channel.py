@@ -4,7 +4,8 @@ import socket
 import time
 
 import Server.context_information_keystore_update as ciku
-import Server.security_mechanisms_informaiton as cismi
+import Server.security_mechanisms_information as smi
+import Server.security_mechanisms_filter as smf
 
 sock = None
 
@@ -42,14 +43,16 @@ context_information_keystore_update_battery_state = ciku.ContextInformationKeyst
 context_information_keystore_update_charging_station_distance = ciku.ContextInformationKeystoreUpdate(
     'charging_station_distance', 0, 500, 0, 5, '[0,100,200,300,400,500]')
 
-context_information_security_mechanisms_information = cismi.SecurityMechanismsInformation('firewall', 3, [0,1,2])
+security_mechanisms_information = smi.SecurityMechanismsInformation('checker', 5, [0, 10, 12, 13, 14])
+
+security_mechanisms_filter = smf.SecurityMechanismsFilter('dangerous_countries', [['firewall2'], ['ids3'], ['ac1'], ['checker4']])
 
 
 def sending_context_information():
     while True:
         try:
             # send messages randomly and generate json objects out of various objects
-            match random.randint(1, 4):
+            match random.randint(4, 5):
                 case 1:
                     sock.send(bytes(
                         json.dumps(context_information_keystore_update_battery_consumption.__dict__),
@@ -67,8 +70,12 @@ def sending_context_information():
                     print(json.dumps(context_information_keystore_update_charging_station_distance.__dict__))
                 case 4:
                     sock.send(bytes(
-                        json.dumps(context_information_security_mechanisms_information.__dict__), encoding='utf-8'))
-                    print(json.dumps(context_information_security_mechanisms_information.__dict__))
+                        json.dumps(security_mechanisms_information.__dict__), encoding='utf-8'))
+                    print(json.dumps(security_mechanisms_information.__dict__))
+                case 5:
+                    sock.send(bytes(
+                        json.dumps(security_mechanisms_filter.__dict__), encoding='utf-8'))
+                    print(json.dumps(security_mechanisms_filter.__dict__))
 
             # adjust time to send less or more messages
             time.sleep(5)

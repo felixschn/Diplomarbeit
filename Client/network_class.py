@@ -21,7 +21,7 @@ def process_update_messages(received_data_dict):
     context_information_database.update_context_information_keystore(received_data_dict)
 
 
-def process_security_mechanism_information(received_data_dict):
+def process_security_mechanisms_information(received_data_dict):
     # check if the number of mode_values and modes is not equal
     if received_data_dict['modes'] != len(received_data_dict['mode_values']):
         frame_info = getframeinfo(currentframe())
@@ -31,6 +31,9 @@ def process_security_mechanism_information(received_data_dict):
 
     context_information_database.update_security_mechanisms_information(received_data_dict)
 
+
+def process_security_mechanisms_filter(received_data_dict):
+    context_information_database.update_security_mechanisms_filter(received_data_dict)
 
 def process_context_information_messages(received_data_dict):
     global weight, max_weight
@@ -109,7 +112,9 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
                     case 'keystore_update':
                         process_update_messages(received_data_dict)
                     case 'security_mechanisms_information':
-                        process_security_mechanism_information(received_data_dict)
+                        process_security_mechanisms_information(received_data_dict)
+                    case 'security_mechanisms_filter':
+                        process_security_mechanisms_filter(received_data_dict)
                     case _:
                         frame_info = getframeinfo(currentframe())
                         print("""\n[ERROR] in""", frame_info.filename, "in line", frame_info.lineno,
