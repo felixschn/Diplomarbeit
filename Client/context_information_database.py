@@ -53,7 +53,6 @@ def get_security_mechanisms_filter() -> list:
     return db_cursor.execute(db_query).fetchall()
 
 
-
 def update_security_mechanisms_information(mechanisms_information_update_message):
     db_cursor = get_cursor()
     # create table for security_mechanisms_information
@@ -91,7 +90,6 @@ def update_security_mechanisms_information(mechanisms_information_update_message
     db_cursor.execute(insert_mechanisms_information_query, query_params)
     db_connection.commit()
     return
-
 
 
 def update_security_mechanisms_filter(security_mechanisms_filter_message):
