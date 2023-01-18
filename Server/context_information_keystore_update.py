@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from itertools import count
 
+
 # class to dynamically update context information attributes and add new ones to the database
 @dataclass()
 class ContextInformationKeystoreUpdate:

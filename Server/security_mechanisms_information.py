@@ -7,4 +7,4 @@ class SecurityMechanismsInformation():
     mechanism_name: str
     modes: int
     mode_values: list
-    message_type: str = field(default='security_mechanisms_information')
+    message_type: str = field(default="security_mechanisms_information")
