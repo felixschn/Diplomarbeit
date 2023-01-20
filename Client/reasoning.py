@@ -1,33 +1,72 @@
 import itertools
 import json
+from importlib import import_module
 from inspect import getframeinfo, currentframe
+from inspect import getmembers, isfunction
+from os import listdir
+from os.path import isfile, join
 
-import Client.Countries.country_evaluation as country_evaluation
 import context_information_database
 
 combination_cost = {}
 
 
-def filter(mode_list, context_information_dict) -> tuple:
+def apply_filters(available_security_mechanisms, context_information_dict) -> tuple:
     available_filters = context_information_database.get_security_mechanisms_filter()
 
-    # check for any filter in the databse
-    for (filter_name, necessary_modes) in available_filters:
-        # TODO implement checks for the filter for example the country evaluation and made it dynamic for further filter
-        # deserialize list from database
-        necessary_modes = json.loads(necessary_modes)
-        # all_modes_list = [item for sublist in mode_list for item in sublist]
+    try:
+        # TODO store all filter in filter table to avoid looping through Filter directory; make sure that names are identical and maybe add meta information
+        #  to database table for instance date of creation etc. put all files from Filter directory in a list; see:
+        #  https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
+        filter_path = "Filter"
+        filter_files_list = [file for file in listdir(filter_path) if isfile(join(filter_path, file))]
+    except FileNotFoundError:
+        frame_info = getframeinfo(currentframe())
+        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
+              """could not find filter files in Filter directory""")
+        return
 
-        # get the lists of security mechanisms contained within the tuple
-        for mechanism in [mechanism_elem for mechanism_elem in mode_list]:
+    # loop through the filter files
+    for filter_file in filter_files_list:
+        # remove .py extension for import call
+        formatted_file_name = filter_file.replace('.py', '')
+        # import file from Filter directory
+        imported_mod = import_module(f"Client.Filter.{formatted_file_name}")
+        # get a list of all functions in the filter_file
+        functions_list = getmembers(imported_mod, isfunction)
+        call_filter = getattr(imported_mod, 'execute_filter')
+        necessary_modes = call_filter(available_security_mechanisms, context_information_dict)
+
+        for mechanism in list(available_security_mechanisms):
             # loop through the particular mechanism list
             for mode_elem in mechanism:
                 if mode_elem in necessary_modes:
                     break
                 # remove the security modes that are not fulfilling the requirements
-                mode_list = [[elem for elem in sub if elem != mode_elem] for sub in mode_list]
+                available_security_mechanisms = [[elem for elem in sub if elem != mode_elem] for sub in available_security_mechanisms]
 
-    return mode_list
+    return available_security_mechanisms
+
+    # check for any apply_filters in the databse
+    # for (filter_name, necessary_modes) in available_filters:
+    #     # TODO implement checks for the apply_filters for example the country evaluation and made it dynamic for further apply_filters
+    #
+    #     # deserialize list from database, which gives a list of lists from a string
+    #     necessary_modes = json.loads(necessary_modes)
+    #
+    #     # loop through the lists and put all items in on list
+    #     necessary_modes= [item for sublist in necessary_modes for item in sublist]
+    #
+    #     # get the lists of security mechanisms contained within the tuple
+    #     for mechanism in list(available_security_mechanisms):
+    #         # loop through the particular mechanism list
+    #         for mode_elem in mechanism:
+    #             if mode_elem in necessary_modes:
+    #                 break
+    #             # remove the security modes that are not fulfilling the requirements
+    #             available_security_mechanisms = [[elem for elem in sub if elem != mode_elem] for sub in available_security_mechanisms]
+    #
+    # return available_security_mechanisms
 
 
 # function to create all possible permutations of all security mechanisms
@@ -36,13 +75,15 @@ def create_all_possible_permutations(context_information_dict):
     security_mechanisms_list = context_information_database.get_security_mechanisms_information()
     security_modes = {}
     security_mode_costs = {}
+
     # loop through all entries, create a key for the dict from the mechanism_name, and add all the modes to a list as
     # values of the dict
     for (mechanism_name, modes, mode_values) in security_mechanisms_list:
         # deserialize mode_values from database table security_mechanism_information
         mode_values = json.loads(mode_values)
-        # create a list of security modes with dynamic names
+        # create a dict of security mode lists with dynamic names as their keys
         security_modes[f"{mechanism_name}_list"] = []
+
         for mode in range(modes):
             try:
                 security_modes[f"{mechanism_name}_list"].append(mechanism_name + f"{mode}")
@@ -57,13 +98,14 @@ def create_all_possible_permutations(context_information_dict):
                 return
 
     # get the values (which are the lists) from the dict through unzipping
-    _, values = zip(*security_modes.items())
+    _, available_security_mechanisms = zip(*security_modes.items())
 
-    filter(values, context_information_dict)
+    # remove modes dependent on available and applicable filters
+    available_security_mechanisms = apply_filters(available_security_mechanisms, context_information_dict)
 
     # calculate all possible permutations of the elements of the lists
     # container_list = [sorted(set(v)) for v in itertools.product(*values)]
-    container_list = [v for v in itertools.product(*values)]
+    container_list = [v for v in itertools.product(*available_security_mechanisms)]
 
     global combination_cost
     for list_element in container_list:
@@ -75,25 +117,13 @@ def create_all_possible_permutations(context_information_dict):
     # sort dict after values to get an order of the security mechanism combination costs
     combination_cost = dict(sorted(combination_cost.items(), key=lambda item: item[1]))
 
-    # TODO create the funtionality to send a update message with different information about reducing the modes, i.e. if car is located in dangerous country
-    #  then only specific firewall combination can be choosen; this has to be dynamic --> call it filter and give information which modes has to be deployed
-
-    # compare the received country code with the list of the existing countries and compare the particular one with a list of malicious nations
-    if country_evaluation.get_country_code(context_information_dict["location"]) in country_evaluation.get_malicious_countries():
-        # TODO has to be dynamic
-        print("dangerous location found!")
-        fwl.remove('fw0')
-        fwl.remove('fw1')
-        idl.remove('id0')
-        idl.remove('id1')
-        acl.remove('ac0')
-        acl.remove('ac1')
-        acl.remove('ac2')
+    # TODO create the functionality to send a update message with different information about reducing the modes, i.e. if car is located in dangerous country
+    #  then only specific firewall combinations can be chosen; this has to be dynamic --> call it apply_filters and give information which modes has to be deployed
 
     return combination_cost.keys()
 
 
-# TODO function where filter reduces amount of permutations with respect to specific context inforamtion
+# TODO function where apply_filters reduces amount of permutations with respect to specific context inforamtion
 
 # create permutations for the hard-coded options list from above; this can be done more easily with itertools
 def permute_options(fwl, idl, acl) -> list:
