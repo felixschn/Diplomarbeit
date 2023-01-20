@@ -134,17 +134,13 @@ def distance(charge, distance, consumption, weight, minimum_value, maximum_value
 
 def choose_option(weight, max_weight, options):
     # easiest way
-    # return options[math.ceil(weight / max_weight) * len(options)]
-
-    # TODO check if calculation is correct when potential order list is small because of a dangerous country in the
-    #  received data --> when list is small it is hard to reach a min_lvl greater then 1, so most of the time the
-    #  output will be 0
 
     # calculate the resulted weight's position; a set of possible options is portioned on a scale, i.e., if only a subset of the possible options is
     # available, they are divided on the scale with their specific values.That means, if the min_lvl is, for example, 7, and there are only 4 options with
     # values greater than 7, the position will be 0
 
-    # TODO weight calculation test, if position is right way to choose an option or if we should go for the max value
+    # TODO check if there are options with the same weight --> currently there is no solution for this; they will have the same order and the one,
+    #  who was inserted first, would be choosen
     min_lvl = math.ceil(weight / max_weight * len(Client.reasoning.combination_cost))
     min_lvl_2 = math.ceil(weight / max_weight * max(Client.reasoning.combination_cost.values()))
     print("min_lvl1: ", min_lvl)
