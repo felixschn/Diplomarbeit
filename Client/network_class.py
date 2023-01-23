@@ -1,6 +1,8 @@
 import json
 import random
 import socketserver
+import os
+import tqdm
 from datetime import datetime, timedelta
 from inspect import getframeinfo, currentframe
 
@@ -9,12 +11,36 @@ import Client.weights
 import context_information_database
 
 HOST = "localhost"
+BUFFER_SIZE = 4096
+DELIMITER = "<delimiter>"
 
 # the range of possible port numbers must be n-1 with respect to the for loop in the function called connection to server in main.py, or else the server will
 # listen to a port that has never been called from the client
 PORT = random.randint(64997, 64999)
 time_format = '%Y-%m-%dT%H:%M:%S.%f'
+path = "D:\PyCharm Projects\Diplomarbeit\Client\Filter"
 
+
+def process_filter_file_message(received_data, connection_handler):
+
+    # if receiver checks for incoming messages but there ar no one
+    if len(received_data) == 0:
+        return
+    print(f"Empfangen: {received_data}\n")
+    _, filename, size_of_file, file_content = received_data.split(DELIMITER)
+    filename = os.path.basename(filename)
+    size_of_file = int(size_of_file)
+    show_progress = tqdm.tqdm(range(size_of_file), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
+
+    with open(f"D:\PyCharm Projects\Diplomarbeit\Client\Filter\{filename}", "wb") as received_file:
+        while True:
+            read_data = connection_handler.request.recv(BUFFER_SIZE)
+            if not read_data:
+                print("empty read_data")
+                break
+
+            received_file.write(read_data)
+            show_progress.update(len(read_data))
 
 def process_update_messages(received_data_dict):
     # deserialization of the received byte string back to json format in order to create table columns from dictionary keys
@@ -34,6 +60,7 @@ def process_security_mechanisms_information(received_data_dict):
 
 def process_security_mechanisms_filter(received_data_dict):
     context_information_database.update_security_mechanisms_filter(received_data_dict)
+
 
 def process_context_information_messages(received_data_dict):
     global weight, max_weight
@@ -61,8 +88,13 @@ def process_context_information_messages(received_data_dict):
     except:
         print("timestamp error while comparing the latest database entry with received context information")
 
-    # evaluate possible set of security mechanisms with respect to data origin (country) and other params which has to be implemented
-    options = Client.reasoning.create_all_possible_permutations(received_data_dict)
+    try:
+        # evaluate possible set of security mechanisms with respect to data origin (country) and other params which has to be implemented
+        options = Client.reasoning.create_all_possible_permutations(received_data_dict)
+    except:
+        frame_info = getframeinfo(currentframe())
+        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno, """no set of possible security mechanisms available\n further message processing not possible""")
+        return
 
     try:
         weight, max_weight = Client.weights.calculate_weights(received_data_dict)
@@ -71,7 +103,8 @@ def process_context_information_messages(received_data_dict):
 
     except TypeError:
         frame_info = getframeinfo(currentframe())
-        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno, """weight calculation was not possible""")
+        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno, """weight calculation was not possible\n further message processing not possible""")
+        return
 
     try:
         best_option = Client.weights.choose_option(weight, max_weight, list(options))
@@ -80,7 +113,8 @@ def process_context_information_messages(received_data_dict):
 
     except:
         frame_info = getframeinfo(currentframe())
-        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno, """best_option calculation was not possible""")
+        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno, """best_option calculation was not possible\n further message processing not possible""")
+        return
 
     # deserialization of the received byte string back to json for creating
     # table columns out of the dictionary keys
@@ -93,14 +127,22 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
         while True:
             try:
                 self.data = self.request.recv(1024).strip()
-
+                received_time = datetime.now()
+                if not self.data.decode():
+                    print("----Received message was empty----")
+                    print("----Waiting for new message----")
+                    break
             except:
                 print("----Lost connection to client----")
                 print("----Waiting for reconnection----")
                 break
 
-            print("{} wrote:".format(self.client_address[0]))
+            print(f"{self.client_address[0]} wrote at {received_time}: ")
             print(self.data.decode('utf-8'))
+
+            if "security_mechanisms_filter" in self.data.decode():
+                process_filter_file_message(self.data.decode(), self)
+                continue
 
             # create a dict out of the received data and forward the data to designated methods to process the data for context evaluation
             try:
@@ -126,6 +168,7 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
                 print("[ERROR] in""", frame_info.filename, "in line", frame_info.lineno,
                       """\n'transformation of received data failed'""")
                 break
+
 
 
 with socketserver.ThreadingTCPServer((HOST, PORT), ConnectionTCPHandler) as server:

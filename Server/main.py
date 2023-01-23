@@ -4,7 +4,8 @@ import time
 
 import Server.Messages.message_context_information as message_context_information
 import Server.Messages.message_keystore_information as message_keystore_information
-import Server.Messages.message_security_mechanism_information as message_security_mechanims_information
+import Server.Messages.message_security_mechanism_information as message_security_mechanisms_information
+import Server.Messages.message_filter_file as message_filter_file
 
 sock = None
 
@@ -36,7 +37,7 @@ if __name__ == '__main__':
     HOST = '127.0.0.1'
     time_format = '%Y-%m-%dT%H:%M:%S.%f'
 
-    thread_security_mechanisms_information = threading.Thread(target=message_security_mechanims_information.send_security_mechanisms_information,
+    thread_security_mechanisms_information = threading.Thread(target=message_security_mechanisms_information.send_security_mechanisms_information,
                                                               args=(connection_to_server(),))
     thread_security_mechanisms_information.start()
 
@@ -45,6 +46,9 @@ if __name__ == '__main__':
 
     thread_keystore_information = threading.Thread(target=message_keystore_information.send_keystore_update, args=(connection_to_server(),))
     thread_keystore_information.start()
+
+    thread_filter_file = threading.Thread(target=message_filter_file.send_filter_file, args=(connection_to_server(),))
+    thread_filter_file.start()
 
     print(threading.active_count())
     print(threading.enumerate())
