@@ -1,77 +1,54 @@
-import json
 import socket
+import threading
 import time
-from datetime import datetime, timedelta
 
-import Server.context_information_creation as cic
-import Server.context_information_creation_extended as cice
+import Server.Messages.message_context_information as message_context_information
+import Server.Messages.message_keystore_information as message_keystore_information
+import Server.Messages.message_security_mechanism_information as message_security_mechanims_information
 
 sock = None
 
 
 # created method for socket connection in order to re-establish connection if server was shutdown
 # idea:https://stackoverflow.com/questions/15870614/python-recreate-a-socket-and-automatically-reconnect
-def connection_to_server(port):
-    global sock
+def connection_to_server():
     # TODO check behaviour if server is closed during connection and vice versa
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Connect to server and send data
 
-    try:
-        sock.connect((HOST, port))
-        # sock.sendall(bytes(data + "\n", "utf-8"))
-        print('Connection established')
-        return True
-
-    except:
-        print(
-            "Couldn't connect, because wrong port or IP address was used",
-            port)
-
-    return False
-
-
-def sending_context_information():
-    while True:
-        # create context information object in while loop to generate a new random object for each packet
-        context_information = cic.ContextInformationCreation(
-            cic.ContextInformationCreation.battery_information(),
-            cic.ContextInformationCreation.distance_generator(),
-            cic.ContextInformationCreation.location_generator(),
-            (datetime.now() + timedelta(days=-1)).strftime(time_format))
-
-        context_information_extended = cice.ContextInformationCreationExtended(
-            cice.ContextInformationCreationExtended.battery_information(),
-            cice.ContextInformationCreationExtended.battery_information(),
-            "good",
-            cice.ContextInformationCreationExtended.distance_generator(),
-            125,
-            datetime.now().strftime(time_format)
-        )
-
+    for port in range(64997, 65000):
         try:
-            # send message and generate json out of context information object
-            sock.send(bytes(
-                json.dumps(context_information_extended.__dict__),
-                encoding='utf-8'))
-            print(json.dumps(context_information_extended.__dict__))
 
-            # adjust time to send less or more messages
-            time.sleep(10)
+            sock.connect((HOST, port))
+            # sock.sendall(bytes(data + "\n", "utf-8"))
+            print('Connection established')
+            return sock
 
         except:
             print(
-                "Connection to server was closed during transmission")
-            break
+                "Couldn't connect, because wrong port or IP address was used",
+                port)
+
+    return
 
 
 if __name__ == '__main__':
     HOST = '127.0.0.1'
     time_format = '%Y-%m-%dT%H:%M:%S.%f'
+
+    thread_security_mechanisms_information = threading.Thread(target=message_security_mechanims_information.send_security_mechanisms_information,
+                                                              args=(connection_to_server(),))
+    thread_security_mechanisms_information.start()
+
+    thread_context_information = threading.Thread(target=message_context_information.send_context_information, args=(connection_to_server(),))
+    thread_context_information.start()
+
+    thread_keystore_information = threading.Thread(target=message_keystore_information.send_keystore_update, args=(connection_to_server(),))
+    thread_keystore_information.start()
+
+    print(threading.active_count())
+    print(threading.enumerate())
+    print(time.perf_counter())
+
     while True:
-        for port in range(64997, 65000):
-            if connection_to_server(port):
-                sending_context_information()
-            else:
-                print("Couldn't establish socket connection")
-                print("Will try again after 10 sec ...")
+        pass
