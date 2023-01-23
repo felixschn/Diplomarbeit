@@ -42,7 +42,10 @@ def get_security_mechanisms_information() -> list:
     db_cursor = get_cursor()
     db_query = "SELECT * FROM security_mechanisms_information"
 
-    return db_cursor.execute(db_query).fetchall()
+    try:
+        return db_cursor.execute(db_query).fetchall()
+    except:
+        return []
 
 
 # get all filters for the security mechanisms from the database
