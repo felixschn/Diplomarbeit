@@ -37,15 +37,18 @@ if __name__ == '__main__':
     HOST = '127.0.0.1'
     time_format = '%Y-%m-%dT%H:%M:%S.%f'
 
-    thread_security_mechanisms_information = threading.Thread(target=message_security_mechanisms_information.send_security_mechanisms_information,
-                                                              args=(connection_to_server(),))
-    thread_security_mechanisms_information.start()
+    #thread_security_mechanisms_information = threading.Thread(target=message_security_mechanisms_information.send_security_mechanisms_information,
+                                                              #args=(connection_to_server(),))
+    #thread_security_mechanisms_information.start()
 
     thread_context_information = threading.Thread(target=message_context_information.send_context_information, args=(connection_to_server(),))
     thread_context_information.start()
 
     thread_keystore_information = threading.Thread(target=message_keystore_information.send_keystore_update, args=(connection_to_server(),))
     thread_keystore_information.start()
+
+    thread_security_mechanisms_information = threading.Thread(target=message_security_mechanisms_information.send_security_mechanisms_information, args=(connection_to_server(),))
+    thread_security_mechanisms_information.start()
 
     thread_filter_file = threading.Thread(target=message_filter_file.send_filter_file, args=(connection_to_server(),))
     thread_filter_file.start()
