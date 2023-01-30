@@ -48,11 +48,11 @@ def process_update_messages(received_data_dict):
 
 
 def process_security_mechanisms_information(received_data_dict):
-    # check if the number of mode_values and modes is not equal
-    if received_data_dict['modes'] != len(received_data_dict['mode_values']):
+    # check if the number of mode_weights and modes is not equal
+    if received_data_dict['modes'] != len(received_data_dict['mode_weights']) or received_data_dict['modes'] != len(received_data_dict['mode_values']):
         frame_info = getframeinfo(currentframe())
         print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
-              """update message for security_mechanism_information: the number of modes and mode values are not equal""")
+              """update message for security_mechanism_information: the number of modes and mode weights or mode values are not equal""")
         return
 
     context_information_database.update_security_mechanisms_information(received_data_dict)
