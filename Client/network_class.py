@@ -42,6 +42,8 @@ def process_filter_file_message(received_data, connection_handler):
             received_file.write(read_data)
             show_progress.update(len(read_data))
 
+    context_information_database.update_security_mechanisms_filter(filename)
+
 def process_update_messages(received_data_dict):
     # deserialization of the received byte string back to json format in order to create table columns from dictionary keys
     context_information_database.update_context_information_keystore(received_data_dict)
@@ -66,7 +68,6 @@ def process_context_information_messages(received_data_dict):
     global weight, max_weight
     db_table_name = 'received_context_information'
 
-    # TODO: check timestamp in received data and compare with system time in order to neglect context information
     try:
         if datetime.strptime(received_data_dict['elicitation_date'], time_format) > datetime.now() + timedelta(minutes=0):
             print("""[ERROR]: date from received data is greater than system time; Context data will be ignored\n""")
@@ -175,5 +176,3 @@ with socketserver.ThreadingTCPServer((HOST, PORT), ConnectionTCPHandler) as serv
     # Activate the server; this will keep running until an interrupt is sent to the program with Ctrl-C
     print("---- Waiting for connection at port", PORT, "----")
     server.serve_forever()
-
-# TODO: if I manually stop the run of the programm all client send context information is lost --> example: stopped process after receiving context information with id 32 --> restarted server and received information 39
