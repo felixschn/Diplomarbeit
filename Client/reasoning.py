@@ -48,34 +48,13 @@ def apply_filters(available_security_mechanisms, context_information_dict) -> tu
 
     return available_security_mechanisms
 
-    # check for any apply_filters in the databse
-    # for (filter_name, necessary_modes) in available_filters:
-    #     # TODO implement checks for the apply_filters for example the country evaluation and made it dynamic for further apply_filters
-    #
-    #     # deserialize list from database, which gives a list of lists from a string
-    #     necessary_modes = json.loads(necessary_modes)
-    #
-    #     # loop through the lists and put all items in on list
-    #     necessary_modes= [item for sublist in necessary_modes for item in sublist]
-    #
-    #     # get the lists of security mechanisms contained within the tuple
-    #     for mechanism in list(available_security_mechanisms):
-    #         # loop through the particular mechanism list
-    #         for mode_elem in mechanism:
-    #             if mode_elem in necessary_modes:
-    #                 break
-    #             # remove the security modes that are not fulfilling the requirements
-    #             available_security_mechanisms = [[elem for elem in sub if elem != mode_elem] for sub in available_security_mechanisms]
-    #
-    # return available_security_mechanisms
-
 
 # function to create all possible permutations of all security mechanisms; returns dict.keys()
 def create_all_possible_permutations(context_information_dict):
     # get all security mechanism information entries from database
     security_mechanisms_list = context_information_database.get_security_mechanisms_information()
     security_modes = {}
-    security_mode_costs = {}
+    security_mode_weight_costs = {}
 
 
     if not security_mechanisms_list:
@@ -85,8 +64,9 @@ def create_all_possible_permutations(context_information_dict):
         return
     # loop through all entries, create a key for the dict from the mechanism_name, and add all the modes to a list as
     # values of the dict
-    for (mechanism_name, modes, mode_values) in security_mechanisms_list:
-        # deserialize mode_values from database table security_mechanism_information
+    for (mechanism_name, modes, mode_weights, mode_values) in security_mechanisms_list:
+        # deserialize mode_weights and mode_values from database table security_mechanism_information
+        mode_weights = json.loads(mode_weights)
         mode_values = json.loads(mode_values)
         # create a dict of security mode lists with dynamic names as their keys
         security_modes[f"{mechanism_name}_list"] = []
@@ -95,8 +75,8 @@ def create_all_possible_permutations(context_information_dict):
             try:
                 security_modes[f"{mechanism_name}_list"].append(mechanism_name + f"{mode}")
 
-                # create a dictionary with the security mechanism mode as the key and the cost as the value
-                security_mode_costs[mechanism_name + f"{mode}"] = mode_values[mode]
+                # create dictionaries with the security mechanism mode as the keys and the mode_weight and mode_value costs as the value
+                security_mode_weight_costs[mechanism_name + f"{mode}"] = (mode_weights[mode], mode_values[mode])
 
             except IndexError:
                 frame_info = getframeinfo(currentframe())
@@ -116,10 +96,12 @@ def create_all_possible_permutations(context_information_dict):
 
     global combination_cost
     for list_element in container_list:
-        sum = 0
+        sum_weight = 0
+        sum_values = 0
         for elem in list_element:
-            sum = sum + security_mode_costs[elem]
-        combination_cost[list_element] = sum
+            sum_weight = sum_weight + security_mode_weight_costs[elem][0]
+            sum_values += security_mode_weight_costs[elem][1]
+        combination_cost[list_element] = (sum_weight, sum_values)
 
     # sort dict after values to get an order of the security mechanism combination costs
     combination_cost = dict(sorted(combination_cost.items(), key=lambda item: item[1]))
