@@ -13,9 +13,6 @@ def get_cursor():
         # https://stackoverflow.com/questions/12932607/how-to-check-if-a-sqlite3-database-exists-in-python
         # read, write, create database at given path
         db_uri = 'file:{}?mode=rwc'.format(pathname2url(db_name))
-
-        # TODO check if check_same_thread=False may lead to any race conditions --> error SQLite objects created in a thread can only be used in that same
-        #  thread. The object was created in thread id [...]
         db_connection = sqlite3.connect(db_uri, uri=True, check_same_thread=False)
 
     return db_connection.cursor()
@@ -96,26 +93,21 @@ def update_security_mechanisms_information(mechanisms_information_update_message
     return
 
 
-def update_security_mechanisms_filter(security_mechanisms_filter_message):
+def update_security_mechanisms_filter(filename):
     db_cursor = get_cursor()
 
-    create_filter_query = """CREATE TABLE if not exists security_mechanisms_filter(filter_name, necessary_modes)"""
+    create_filter_query = """CREATE TABLE if not exists security_mechanisms_filter(filter_name)"""
     db_cursor.execute(create_filter_query)
-
-    # serialize mode_weights because SQLite can't store lists; see:
-    # https://stackoverflow.com/questions/20444155/python-proper-way-to-store-list-of-strings-in-sqlite3-or-mysql
-    security_mechanisms_filter_message['necessary_modes'] = json.dumps(security_mechanisms_filter_message['necessary_modes'])
 
     current_columns = db_cursor.execute("SELECT filter_name FROM security_mechanisms_filter").fetchall()
     if len(current_columns) == 0:
         pass
 
-    elif security_mechanisms_filter_message['filter_name'] in [elem[0] for elem in current_columns]:
-        update_query = """UPDATE security_mechanisms_filter SET
-                        necessary_modes = ? WHERE filter_name = ?"""
+    elif filename in [elem[0] for elem in current_columns]:
+        update_query = """UPDATE security_mechanisms_filter SET WHERE filter_name = ?"""
 
         # get values name, mode, mode_weights from the dict
-        query_params = list(security_mechanisms_filter_message.values())[:2]
+        query_params = filename
         # get the name attribute and store it in a separate variable in order to match the update_query requirements, where name has to be the last parameter
         list_element = query_params[0]
         # remove the name from the list and append it at the end
@@ -124,9 +116,9 @@ def update_security_mechanisms_filter(security_mechanisms_filter_message):
         db_connection.commit()
         return
 
-    insert_filter_query = """INSERT INTO security_mechanisms_filter (filter_name, necessary_modes) VALUES (?, ?)"""
-    query_params = list(security_mechanisms_filter_message.values())[:2]
-    db_cursor.execute(insert_filter_query, query_params)
+    insert_filter_query = """INSERT INTO security_mechanisms_filter (filter_name) VALUES (?)"""
+    query_params = filename
+    db_cursor.execute(insert_filter_query, (query_params,))
     db_connection.commit()
     return
 
@@ -146,7 +138,6 @@ def update_context_information_keystore(keystore_update_message):
 
     # check if keyname is in list, therefore get first elements in a list of tuples
     elif keystore_update_message['keyname'] in [elem[0] for elem in current_columns]:
-        # TODO compare if the update message brought new values for a specific keyname or overwrite entries all the time
         update_query = """UPDATE context_information_keystore SET 
                         minimum_value = ?,
                         maximum_value = ?,
