@@ -141,14 +141,21 @@ def choose_option(weight, max_weight, options):
 
     # TODO check if there are options with the same weight --> currently there is no solution for this; they will have the same order and the one,
     #  who was inserted first, would be choosen
-    min_lvl = math.ceil(weight / max_weight * len(Client.reasoning.combination_cost))
-    min_lvl_2 = math.ceil(weight / max_weight * max(Client.reasoning.combination_cost.values()))
-    print("min_lvl1: ", min_lvl)
-    print("min_lvl2: ", min_lvl_2)
-    print("level difference: ", min_lvl_2 - min_lvl)
 
-    pos_lvl1 = bisect_left(options, min_lvl, key=lambda x: Client.reasoning.combination_cost[x])
-    pos_lvl2 = bisect_left(options, min_lvl_2, key=lambda x: Client.reasoning.combination_cost[x])
-    print("position lvl 1: ", pos_lvl1)
-    print("position lvl 2: ", pos_lvl2)
-    return options[pos_lvl2]  # TODO: testing --> IndexError: list index out of range
+    # create a dict to store all affordable security mechanism combinations
+    affordable_options = {}
+    min_lvl = math.ceil(weight / max_weight * max(Client.reasoning.combination_cost.values())[0])
+    print("min_lvl2: ", min_lvl)
+
+    # loop through the combination_cost dict from the reasoning.py file and store all key-value pairs in the affordable_options dict, which have weights
+    # smaller than the min_lvl
+    for item in Client.reasoning.combination_cost.keys():
+        if Client.reasoning.combination_cost[item][0] <= min_lvl:
+            affordable_options[item] = Client.reasoning.combination_cost[item]
+
+    # return the option with the highest value_sum
+    return max(affordable_options, key = lambda x:affordable_options[x][1])
+
+    # pos_lvl = bisect_left(options, min_lvl, key=lambda x: Client.reasoning.combination_cost[x][0])
+    # print("position lvl 2: ", pos_lvl)
+    # return options[pos_lvl]  # TODO: testing --> IndexError: list index out of range
