@@ -12,7 +12,7 @@ sock = None
 
 # created method for socket connection in order to re-establish connection if server was shutdown
 # idea:https://stackoverflow.com/questions/15870614/python-recreate-a-socket-and-automatically-reconnect
-def connection_to_server():
+def connection_to_server(message_name):
     # TODO check behaviour if server is closed during connection and vice versa
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Connect to server and send data
@@ -27,7 +27,7 @@ def connection_to_server():
 
         except:
             print(
-                "Couldn't connect, because wrong port or IP address was used",
+                f"{message_name}: Couldn't connect, because wrong port or IP address was used",
                 port)
 
     return
@@ -41,16 +41,16 @@ if __name__ == '__main__':
                                                               #args=(connection_to_server(),))
     #thread_security_mechanisms_information.start()
 
-    thread_context_information = threading.Thread(target=message_context_information.send_context_information, args=(connection_to_server(),))
+    thread_context_information = threading.Thread(target=message_context_information.send_context_information, args=(connection_to_server('context_information'),))
     thread_context_information.start()
 
-    thread_keystore_information = threading.Thread(target=message_keystore_information.send_keystore_update, args=(connection_to_server(),))
+    thread_keystore_information = threading.Thread(target=message_keystore_information.send_keystore_update, args=(connection_to_server('keystore_information'),))
     thread_keystore_information.start()
 
-    thread_security_mechanisms_information = threading.Thread(target=message_security_mechanisms_information.send_security_mechanisms_information, args=(connection_to_server(),))
+    thread_security_mechanisms_information = threading.Thread(target=message_security_mechanisms_information.send_security_mechanisms_information, args=(connection_to_server('security_mechanisms_information'),))
     thread_security_mechanisms_information.start()
 
-    thread_filter_file = threading.Thread(target=message_filter_file.send_filter_file, args=(connection_to_server(),))
+    thread_filter_file = threading.Thread(target=message_filter_file.send_filter_file, args=(connection_to_server('filter_file'),))
     thread_filter_file.start()
 
     print(threading.active_count())
