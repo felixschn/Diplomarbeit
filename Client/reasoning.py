@@ -13,21 +13,18 @@ combination_cost = {}
 
 def apply_filters(available_security_mechanisms, context_information_dict) -> tuple:
     try:
-        # TODO store all filter in filter table to avoid looping through Filter directory; make sure that names are identical and maybe add meta information
-        #  to database table for instance date of creation etc. put all files from Filter directory in a list; see:
-        #  https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
-        filter_path = "Filter"
-        filter_files_list = [file for file in listdir(filter_path) if isfile(join(filter_path, file))]
+        filter_list = context_information_database.get_security_mechanisms_filter()
+
     except FileNotFoundError:
         frame_info = getframeinfo(currentframe())
         print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
-              """could not find filter files in Filter directory""")
+              """could not retrieve filters from the database""")
         return
 
     # loop through the filter files
-    for filter_file in filter_files_list:
+    for filter_file in filter_list:
         # remove .py extension for import call
-        formatted_file_name = filter_file.replace('.py', '')
+        formatted_file_name = filter_file[0].replace('.py', '')
         # import file from Filter directory
         imported_mod = import_module(f"Client.Filter.{formatted_file_name}")
         # get a list of all functions in the filter_file
