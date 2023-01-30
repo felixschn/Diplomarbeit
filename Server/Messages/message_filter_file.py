@@ -1,22 +1,13 @@
-from dataclasses import dataclass, field
-import socket
 import os
 import time
 import tqdm
 
-filename = "D:\PyCharm Projects\Diplomarbeit\Server\Loading_Files\send_test.py"
+filename = "D:\PyCharm Projects\Diplomarbeit\Server\Loading_Files\country_evaluation.py"
 size_of_file = os.path.getsize(f"{filename}")
 DELIMITER = "<delimiter>"
 message_type = "security_mechanisms_filter"
 BUFFER_SIZE = 4096
 count = 0
-
-
-@dataclass
-class SecurityMechanismsFilter():
-    filter_name: str
-    necessary_modes: list
-    message_type: str = field(default='security_mechanisms_filter')
 
 
 def send_filter_file(sock):
