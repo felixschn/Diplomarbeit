@@ -59,11 +59,12 @@ def get_security_mechanisms_filter() -> list:
 def update_security_mechanisms_information(mechanisms_information_update_message):
     db_cursor = get_cursor()
     # create table for security_mechanisms_information
-    create_mechanisms_information_query = """CREATE TABLE if not exists security_mechanisms_information(mechanism_name, modes, mode_values)"""
+    create_mechanisms_information_query = """CREATE TABLE if not exists security_mechanisms_information(mechanism_name, modes, mode_weights, mode_values)"""
     db_cursor.execute(create_mechanisms_information_query)
 
-    # serialize mode_values because SQLite can't store lists; see:
+    # serialize mode_weights because SQLite can't store lists; see:
     # https://stackoverflow.com/questions/20444155/python-proper-way-to-store-list-of-strings-in-sqlite3-or-mysql
+    mechanisms_information_update_message['mode_weights'] = json.dumps(mechanisms_information_update_message['mode_weights'])
     mechanisms_information_update_message['mode_values'] = json.dumps(mechanisms_information_update_message['mode_values'])
 
     # get the mechanism_name from the database table and check if entry already exists
@@ -73,10 +74,10 @@ def update_security_mechanisms_information(mechanisms_information_update_message
         pass
     # otherwise, update the existing entry
     elif mechanisms_information_update_message['mechanism_name'] in [elem[0] for elem in current_columns]:
-        update_query = """UPDATE security_mechanisms_information SET modes = ?, mode_values = ? WHERE mechanism_name = ?"""
+        update_query = """UPDATE security_mechanisms_information SET modes = ?, mode_weights = ?, mode_values = ? WHERE mechanism_name = ?"""
 
-        # get values name, mode, mode_values from the dict
-        query_params = list(mechanisms_information_update_message.values())[:3]
+        # get values name, mode, mode_weights, mode_values from the dict
+        query_params = list(mechanisms_information_update_message.values())[:4]
         # get the name attribute and store it in a separate variable in order to match the update_query requirements, where name has to be the last parameter
         list_element = query_params[0]
         # remove the name from the list and append it at the end
@@ -87,9 +88,9 @@ def update_security_mechanisms_information(mechanisms_information_update_message
         return
 
     insert_mechanisms_information_query = """INSERT INTO security_mechanisms_information
-                                    (mechanism_name, modes, mode_values) 
-                                    VALUES (?, ?, ?)"""
-    query_params = list(mechanisms_information_update_message.values())[:3]
+                                    (mechanism_name, modes, mode_weights, mode_values) 
+                                    VALUES (?, ?, ?, ? )"""
+    query_params = list(mechanisms_information_update_message.values())[:4]
     db_cursor.execute(insert_mechanisms_information_query, query_params)
     db_connection.commit()
     return
@@ -101,7 +102,7 @@ def update_security_mechanisms_filter(security_mechanisms_filter_message):
     create_filter_query = """CREATE TABLE if not exists security_mechanisms_filter(filter_name, necessary_modes)"""
     db_cursor.execute(create_filter_query)
 
-    # serialize mode_values because SQLite can't store lists; see:
+    # serialize mode_weights because SQLite can't store lists; see:
     # https://stackoverflow.com/questions/20444155/python-proper-way-to-store-list-of-strings-in-sqlite3-or-mysql
     security_mechanisms_filter_message['necessary_modes'] = json.dumps(security_mechanisms_filter_message['necessary_modes'])
 
@@ -113,7 +114,7 @@ def update_security_mechanisms_filter(security_mechanisms_filter_message):
         update_query = """UPDATE security_mechanisms_filter SET
                         necessary_modes = ? WHERE filter_name = ?"""
 
-        # get values name, mode, mode_values from the dict
+        # get values name, mode, mode_weights from the dict
         query_params = list(security_mechanisms_filter_message.values())[:2]
         # get the name attribute and store it in a separate variable in order to match the update_query requirements, where name has to be the last parameter
         list_element = query_params[0]
