@@ -27,7 +27,7 @@ def send_keystore_update(sock):
             while True:
                 sock.send(bytes(json.dumps(context_information_keystore_update_battery_state.__dict__), encoding='utf-8'))
                 print(json.dumps(context_information_keystore_update_battery_state.__dict__))
-                time.sleep(15)
+                time.sleep(50)
         else:
-            print("Couldn't establish socket connection")
-            print("Will try again after 10 sec ...")
+            print("Couldn't establish socket connection for keystore_information")
+            print("Will try again after 10 sec ...\n")

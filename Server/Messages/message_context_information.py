@@ -1,9 +1,9 @@
 import json
 import random
+import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from itertools import count
-import time
 
 
 # class to create extended context information packet for simulation purposes
@@ -43,18 +43,17 @@ def send_context_information(sock):
 
     while True:
         if sock:
-            while True:
-                context_information = ContextInformationCreation(ContextInformationCreation.battery_information(),
-                                                                 ContextInformationCreation.battery_information(),
-                                                                 "good",
-                                                                 ContextInformationCreation.distance_generator(),
-                                                                 125, datetime.now().strftime(time_format))
+            context_information = ContextInformationCreation(ContextInformationCreation.battery_information(),
+                                                             ContextInformationCreation.battery_information(),
+                                                             "good",
+                                                             ContextInformationCreation.distance_generator(),
+                                                             125, datetime.now().strftime(time_format))
 
-                sock.send(bytes(json.dumps(context_information.__dict__), encoding='utf-8'))
-                print(json.dumps(context_information.__dict__))
-                time.sleep(5)
+            sock.send(bytes(json.dumps(context_information.__dict__), encoding='utf-8'))
+            print(json.dumps(context_information.__dict__))
+            time.sleep(10)
 
 
         else:
-            print("Couldn't establish socket connection")
-            print("Will try again after 10 sec ...")
+            print("Couldn't establish socket connection for context information message")
+            print("Will try again after 10 sec ...\n")
