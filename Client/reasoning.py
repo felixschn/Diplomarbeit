@@ -25,15 +25,21 @@ def apply_filters(available_security_mechanisms, context_information_dict) -> tu
     for filter_file in filter_list:
         # remove .py extension for import call
         formatted_file_name = filter_file[0].replace('.py', '')
-        # import file from Filter directory
-        imported_mod = import_module(f"Client.Filter.{formatted_file_name}")
-        # get a list of all functions in the filter_file
-        functions_list = getmembers(imported_mod, isfunction)
+
+        try:
+            # import file from Filter directory
+            imported_mod = import_module(f"Client.Filter.{formatted_file_name}")
+
+        except:
+            continue
+
         try:
             call_filter = getattr(imported_mod, 'execute_filter')
             necessary_modes = call_filter(available_security_mechanisms, context_information_dict)
+
         except:
             print("""some of the files in the Filter directory aren't usable filters""")
+            return available_security_mechanisms
 
         for mechanism in list(available_security_mechanisms):
             # loop through the particular mechanism list
@@ -53,12 +59,12 @@ def create_all_possible_permutations(context_information_dict):
     security_modes = {}
     security_mode_weight_costs = {}
 
-
     if not security_mechanisms_list:
         frame_info = getframeinfo(currentframe())
         print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
               """retireved no security mechanisms information from database""")
         return
+
     # loop through all entries, create a key for the dict from the mechanism_name, and add all the modes to a list as
     # values of the dict
     for (mechanism_name, modes, mode_weights, mode_values) in security_mechanisms_list:
