@@ -1,5 +1,6 @@
 import json
 import sqlite3
+from inspect import getframeinfo, currentframe
 from urllib.request import pathname2url
 
 db_connection: sqlite3.dbapi2 = None
@@ -42,6 +43,9 @@ def get_security_mechanisms_information() -> list:
     try:
         return db_cursor.execute(db_query).fetchall()
     except:
+        frame_info = getframeinfo(currentframe())
+        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
+              """could not find security mechanism information in database""")
         return []
 
 
@@ -104,15 +108,10 @@ def update_security_mechanisms_filter(filename):
         pass
 
     elif filename in [elem[0] for elem in current_columns]:
-        update_query = """UPDATE security_mechanisms_filter SET WHERE filter_name = ?"""
+        update_query = """UPDATE security_mechanisms_filter SET filter_name = ?"""
 
-        # get values name, mode, mode_weights from the dict
         query_params = filename
-        # get the name attribute and store it in a separate variable in order to match the update_query requirements, where name has to be the last parameter
-        list_element = query_params[0]
-        # remove the name from the list and append it at the end
-        query_params = [x for x in query_params if x != list_element] + [list_element]
-        db_cursor.execute(update_query, query_params)
+        db_cursor.execute(update_query, (query_params,))
         db_connection.commit()
         return
 
