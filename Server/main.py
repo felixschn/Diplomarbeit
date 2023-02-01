@@ -6,6 +6,7 @@ import Server.Messages.message_context_information as message_context_informatio
 import Server.Messages.message_keystore_information as message_keystore_information
 import Server.Messages.message_security_mechanism_information as message_security_mechanisms_information
 import Server.Messages.message_filter_file as message_filter_file
+import Server.Messages.message_security_mechanism_file as message_security_mechanism_file
 
 sock = None
 
@@ -41,6 +42,15 @@ if __name__ == '__main__':
                                                               #args=(connection_to_server(),))
     #thread_security_mechanisms_information.start()
 
+    thread_filter_file = threading.Thread(target=message_filter_file.send_filter_file, args=(connection_to_server('filter_file'),))
+    thread_filter_file.start()
+    thread_filter_file.join()
+
+    thread_security_mechanism_file = threading.Thread(target=message_security_mechanism_file.send_security_mechanism_file, args=(connection_to_server('security_mechanism_file'),))
+    thread_security_mechanism_file.start()
+    thread_security_mechanism_file.join()
+
+
     thread_context_information = threading.Thread(target=message_context_information.send_context_information, args=(connection_to_server('context_information'),))
     thread_context_information.start()
 
@@ -50,8 +60,7 @@ if __name__ == '__main__':
     thread_security_mechanisms_information = threading.Thread(target=message_security_mechanisms_information.send_security_mechanisms_information, args=(connection_to_server('security_mechanisms_information'),))
     thread_security_mechanisms_information.start()
 
-    thread_filter_file = threading.Thread(target=message_filter_file.send_filter_file, args=(connection_to_server('filter_file'),))
-    thread_filter_file.start()
+
 
     print(threading.active_count())
     print(threading.enumerate())
