@@ -1,7 +1,6 @@
 import ast
 import math
 import sqlite3
-from bisect import bisect_left
 
 import Client.context_information_database as cid
 import Client.reasoning
@@ -153,9 +152,14 @@ def choose_option(weight, max_weight, options):
         if Client.reasoning.combination_cost[item][0] <= min_lvl:
             affordable_options[item] = Client.reasoning.combination_cost[item]
 
+    # TODO what should the program return, if theres is no affordable security_mechanism combination --> no security mechanisms or risk to run out of battery
+    if len(affordable_options) == 0:
+        print("There are no affordable security_mechanisms available; Should car run without any mechanisms ?? \n\n")
+        return
+
     # return the option with the highest value_sum
-    return max(affordable_options, key = lambda x:affordable_options[x][1])
+    return max(affordable_options, key=lambda x: affordable_options[x][1])
 
     # pos_lvl = bisect_left(options, min_lvl, key=lambda x: Client.reasoning.combination_cost[x][0])
     # print("position lvl 2: ", pos_lvl)
-    # return options[pos_lvl]  # TODO: testing --> IndexError: list index out of range
+    # return options[pos_lvl] 
