@@ -25,6 +25,10 @@ path = "D:\PyCharm Projects\Diplomarbeit\Client\Filter"
 def reload_retrieved_modules(filename, module_path):
     formatted_file_name = filename.replace('.py', '')
     imported_mod = import_module(f"{module_path}{formatted_file_name}")
+
+    # note: Due to a security feature of the reload function, existing functions of a module remain if they are not overwritten through an update; see: the docs and
+    # https://stackoverflow.com/questions/58946837/reload-function-fails-to-erase-removed-variables
+    # to avoid any problems with not removed functions, the filter files will contain only one public function which has to be present and, therefore, never get deleted
     reload(imported_mod)
 
 
@@ -171,10 +175,11 @@ def process_message_context_information(received_data_dict):
               """best_option calculation was not possible\n further message processing not possible""")
         return
 
+    # save context information with best option evaluation to the database
+    context_information_database.update_context_information(received_data_dict)
+
     # check if the best_option tuple is not empty
     if best_option:
-        # save context information with best option evaluation to the database
-        context_information_database.update_context_information(received_data_dict)
         # give best_option to set_security_mechanisms function in order to set the appropriated mechanisms and their modes
         Client.set_security_mechanisms.set_security_mechanisms(best_option)
 
