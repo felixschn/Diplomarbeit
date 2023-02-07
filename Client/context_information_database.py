@@ -1,5 +1,9 @@
+import itertools
 import json
+import random
+import re
 import sqlite3
+from collections import deque
 from inspect import getframeinfo, currentframe
 from urllib.request import pathname2url
 
@@ -39,6 +43,19 @@ def get_latest_date_entry(table_name) -> str:
 def get_security_mechanisms_information() -> list:
     db_cursor = get_cursor()
     db_query = "SELECT * FROM security_mechanisms_information"
+
+    try:
+        return db_cursor.execute(db_query).fetchall()
+    except:
+        frame_info = getframeinfo(currentframe())
+        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
+              """could not find security mechanism information in database""")
+        return []
+
+
+def get_security_mechanisms_information_name() -> list:
+    db_cursor = get_cursor()
+    db_query = "SELECT mechanism_name from security_mechanisms_information"
 
     try:
         return db_cursor.execute(db_query).fetchall()
@@ -95,6 +112,136 @@ def update_security_mechanisms_information(mechanisms_information_update_message
     db_cursor.execute(insert_mechanisms_information_query, query_params)
     db_connection.commit()
     return
+
+
+def get_max_weight_combination() -> int:
+    db_cursor = get_cursor()
+    return db_cursor.execute("SELECT MAX(weight) FROM security_mechanisms_combination").fetchone()[0]
+
+
+def get_best_affordable_combination(combination_weight_limit, necessary_modes):
+    db_cursor = get_cursor()
+
+    # create a query to retrieve the security mechanism combination with the highest value depending on several conditions like weight or necessary modes
+    combination_query = 'SELECT * from ('
+    combination_query_max_value = 'SELECT * from security_mechanisms_combination WHERE value = (SELECT MAX(value) from security_mechanisms_combination WHERE weight <= ?'
+    combination_query_min_value = 'WHERE weight = (SELECT MIN(weight) from ('
+    for mode in necessary_modes:
+        # separate mode name and number
+        mode_name = "".join((re.findall(r"[a-zA-Z]+", mode)))
+        mode_number = "".join((re.findall(r"\d+", mode)))
+        # append combination_query with mode name and number
+        combination_query_max_value += f" AND {mode_name} >= {mode_number}"
+    # add a closing bracket to the combination_query
+    combination_query_max_value += '))'
+    combination_query += combination_query_max_value + combination_query_min_value + combination_query_max_value + ')'
+
+    affordable_combinations = db_cursor.execute(combination_query, (combination_weight_limit, combination_weight_limit)).fetchall()
+
+    if not affordable_combinations:
+        alternative_combination_query = 'SELECT * from (SELECT * from security_mechanisms_combination WHERE value = (SELECT MAX(value) from security_mechanisms_combination WHERE weight <= ?)) where weight = (SELECT MIN(weight) from (SELECT * from security_mechanisms_combination WHERE value = (SELECT MAX(value) from security_mechanisms_combination WHERE weight <= ?)))'
+        alternative_combination = db_cursor.execute(alternative_combination_query, (combination_weight_limit, combination_weight_limit,)).fetchall()
+        return alternative_combination
+
+    elif len(affordable_combinations) > 1:
+        # TODO think about what to do in case both the weight and value of the chosen combinations are equal --> Normally, the program should have chosen
+        #  equally strong mechanism combinations, so which combination the program chooses is unimportant.
+
+        # return one of the combinations randomly
+        return affordable_combinations[random.randint(0, len(affordable_combinations) - 1)]
+
+    return affordable_combinations
+
+
+def create_security_mechanism_combinations():
+    db_cursor = get_cursor()
+
+    # delete existing security_mechanism_combination table
+    db_cursor.execute("DROP TABLE if exists security_mechanisms_combination")
+
+    # create table security_mechanisms_combination with predefined (combination, weight, value) and dynmaic columns (available security mechanism columns)
+    security_mechanisms_name_deque = deque(["combination", "weight", "value"])
+    security_mechanisms_name_deque.extend(deque((itertools.chain(*get_security_mechanisms_information_name()))))
+    create_combination_query = "CREATE TABLE if not exists security_mechanisms_combination(%s)" % ", ".join(security_mechanisms_name_deque)
+    db_cursor.execute(create_combination_query)
+
+    # get the current security mechanism information from the database and initialize the necessary dictionaries to store modes and their costs
+    security_mechanisms_list = get_security_mechanisms_information()
+    security_modes = {}
+    security_mode_weight_costs = {}
+
+    # check if the database returned any security mechanism information
+    if not security_mechanisms_list:
+        frame_info = getframeinfo(currentframe())
+        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
+              """retireved no security mechanisms information from database""")
+        return
+
+    # loop through all entries, create a key for the dict from the mechanism_name, and add all the modes to a list as values of the dict
+    for (mechanism_name, modes, mode_weights, mode_values) in security_mechanisms_list:
+        # deserialize mode_weights and mode_values from database table security_mechanism_information
+        mode_weights = json.loads(mode_weights)
+        mode_values = json.loads(mode_values)
+        # create a dict of security mode lists with dynamic names as their keys
+        security_modes[f"{mechanism_name}_list"] = []
+
+        for mode in range(modes):
+            try:
+                security_modes[f"{mechanism_name}_list"].append(mechanism_name + f"{mode}")
+
+                # create dictionaries with the security mechanism mode as the keys and the mode_weight and mode_value costs as the value
+                security_mode_weight_costs[mechanism_name + f"{mode}"] = (mode_weights[mode], mode_values[mode])
+
+            except IndexError:
+                frame_info = getframeinfo(currentframe())
+                print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
+                      """creating security_mode or security_mode_list failed; create_all_possible_permutations is not possible\n fix security mechanism information through update message""")
+                return
+
+    # get the values (which are the lists) from the dict through unzipping
+    _, available_security_mechanisms = zip(*security_modes.items())
+
+    # calculate all possible permutations of the elements of the lists
+    # container_list = [sorted(set(v)) for v in itertools.product(*values)]
+    container_list = [v for v in itertools.product(*available_security_mechanisms)]
+
+    # create adaptive query with respect to the total amount of keys in context_information_values dict
+    insert_query_string = "INSERT INTO security_mechanisms_combination("
+
+    # retrieve all keys from dict and write it into query; add necessary ',' to the end
+    insert_query_string += ",".join(security_mechanisms_name_deque)
+
+    # append needed sql statement VALUES
+    insert_query_string += ") VALUES ("
+
+    # add placeholder ? for every key in context_information_values; add necessary ',' to the end
+    insert_query_string += len(security_mechanisms_name_deque) * '?,'
+
+    # last ? should not have a ',' in order to have a valid query; close query string with ')'
+    insert_query_string = insert_query_string[:-1] + ')'
+
+    # add items to database, commit and close
+    # db_cursor.execute(insert_query_string)
+
+    global combination_cost
+    for list_element in container_list:
+        sum_weights = 0
+        sum_values = 0
+        mode_number_list = []
+        for elem in list_element:
+            sum_weights += security_mode_weight_costs[elem][0]
+            sum_values += security_mode_weight_costs[elem][1]
+            mode_number_list.append(int("".join(re.findall(r"\d+", elem))))
+        # combination_cost[list_element] = (sum_weights, sum_values)
+        insert_deque = deque([str(list_element), sum_weights, sum_values])
+        insert_deque.extend(mode_number_list)
+        db_cursor.execute(insert_query_string, insert_deque)
+    db_connection.commit()
+
+    # TODO store in database: combination: list_element; weight = sum_weights; value = sum_values; --> all mechanisms from list_element with only the integer
+
+    # sort dict after values to get an order of the security mechanism combination costs
+    # combination_cost = dict(sorted(combination_cost.items(), key=lambda item: item[1]))
 
 
 def update_security_mechanisms_filter(filename):
