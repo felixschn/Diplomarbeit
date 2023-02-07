@@ -1,6 +1,7 @@
-from dataclasses import dataclass, field
 import json
 import time
+from dataclasses import dataclass, field
+
 
 # class to dynamically add new information about security mechanisms who should be add to the system
 @dataclass
@@ -14,7 +15,7 @@ class SecurityMechanismsInformation():
 
 def send_security_mechanisms_information(sock):
     time_format = '%Y-%m-%dT%H:%M:%S.%f'
-    security_mechanisms_information = SecurityMechanismsInformation('checker', 5, [0, 5, 10, 15, 20], [0, 2, 3, 4, 10])
+    security_mechanisms_information = SecurityMechanismsInformation('vpn', 2, [0, 10], [0, 5])
 
     while True:
         if sock:
