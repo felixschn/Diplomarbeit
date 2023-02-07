@@ -5,7 +5,9 @@ import socketserver
 from datetime import datetime, timedelta
 from importlib import reload, import_module
 from inspect import getframeinfo, currentframe
+
 import tqdm
+
 import Client.reasoning
 import Client.set_security_mechanisms
 import Client.weights
@@ -112,7 +114,11 @@ def process_message_security_mechanisms_information(received_data_dict):
               """update message for security_mechanism_information: the number of modes and mode weights or mode values are not equal""")
         return
 
+    # write retrieved information to the database
     context_information_database.update_security_mechanisms_information(received_data_dict)
+
+    # call function to create new combinations, weights and values for the updated security mechanism information
+    context_information_database.create_security_mechanism_combinations()
 
 
 def process_message_security_mechanisms_filter(received_data_dict):
@@ -145,15 +151,6 @@ def process_message_context_information(received_data_dict):
         print("timestamp error while comparing the latest database entry with received context information")
 
     try:
-        # evaluate possible set of security mechanisms with respect to data origin (country) and other params which has to be implemented
-        options = Client.reasoning.create_all_possible_permutations(received_data_dict)
-    except:
-        frame_info = getframeinfo(currentframe())
-        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
-              """no set of possible security mechanisms available\n further message processing not possible""")
-        return
-
-    try:
         weight, max_weight = Client.weights.calculate_weights(received_data_dict)
         received_data_dict['weight'] = weight
         print("calculated weight: ", weight)
@@ -165,7 +162,7 @@ def process_message_context_information(received_data_dict):
         return
 
     try:
-        best_option = Client.weights.choose_option(weight, max_weight, list(options))
+        best_option = Client.reasoning.calculate_best_combination(weight, max_weight, received_data_dict)
         print(best_option, "\n")
         received_data_dict['best_option'] = str(best_option)
 
