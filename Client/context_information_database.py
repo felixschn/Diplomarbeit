@@ -122,35 +122,44 @@ def get_max_weight_combination() -> int:
 def get_best_affordable_combination(combination_weight_limit, necessary_modes):
     db_cursor = get_cursor()
 
-    # create a query to retrieve the security mechanism combination with the highest value depending on several conditions like weight or necessary modes
+    # create a query to retrieve the security mechanism combination with the highest received_message_value and lowest weight depending on several conditions like weight or
+    # necessary modes
     combination_query = 'SELECT * from ('
-    combination_query_max_value = 'SELECT * from security_mechanisms_combination WHERE value = (SELECT MAX(value) from security_mechanisms_combination WHERE weight <= ?'
+    combination_query_max_value = 'SELECT * from security_mechanisms_combination WHERE received_message_value = (SELECT MAX(received_message_value) from security_mechanisms_combination WHERE weight <= ?'
     combination_query_min_value = 'WHERE weight = (SELECT MIN(weight) from ('
+
+    # add the necessary modes to the combination_query_max_value
     for mode in necessary_modes:
         # separate mode name and number
         mode_name = "".join((re.findall(r"[a-zA-Z]+", mode)))
         mode_number = "".join((re.findall(r"\d+", mode)))
-        # append combination_query with mode name and number
+        # append mode name and number to the query
         combination_query_max_value += f" AND {mode_name} >= {mode_number}"
     # add a closing bracket to the combination_query
     combination_query_max_value += '))'
-    combination_query += combination_query_max_value + combination_query_min_value + combination_query_max_value + ')'
+    # merge all the sub queries
+    combination_query += combination_query_max_value + ' ' + combination_query_min_value + combination_query_max_value + ')'
 
     affordable_combinations = db_cursor.execute(combination_query, (combination_weight_limit, combination_weight_limit)).fetchall()
 
+    # check if affordable_combinations is empty
     if not affordable_combinations:
-        alternative_combination_query = 'SELECT * from (SELECT * from security_mechanisms_combination WHERE value = (SELECT MAX(value) from security_mechanisms_combination WHERE weight <= ?)) where weight = (SELECT MIN(weight) from (SELECT * from security_mechanisms_combination WHERE value = (SELECT MAX(value) from security_mechanisms_combination WHERE weight <= ?)))'
-        alternative_combination = db_cursor.execute(alternative_combination_query, (combination_weight_limit, combination_weight_limit,)).fetchall()
-        return alternative_combination
+        # query to find the combination with the highest received_message_value and lowest weight without considering necessary modes because there was no affordable
+        # option when considering all necessary modes
+        alternative_combination_query = """SELECT * from (SELECT * from security_mechanisms_combination WHERE received_message_value = 
+                                        (SELECT MAX(received_message_value) from security_mechanisms_combination WHERE weight <= ?)) WHERE weight = 
+                                        (SELECT MIN(weight) from (SELECT * from security_mechanisms_combination WHERE received_message_value = 
+                                        (SELECT MAX(received_message_value) from security_mechanisms_combination WHERE weight <= ?)))"""
+        affordable_combinations = db_cursor.execute(alternative_combination_query, (combination_weight_limit, combination_weight_limit,)).fetchall()
 
     elif len(affordable_combinations) > 1:
-        # TODO think about what to do in case both the weight and value of the chosen combinations are equal --> Normally, the program should have chosen
+        # TODO think about what to do in case both the weight and received_message_value of the chosen combinations are equal --> Normally, the program should have chosen
         #  equally strong mechanism combinations, so which combination the program chooses is unimportant.
 
         # return one of the combinations randomly
-        return affordable_combinations[random.randint(0, len(affordable_combinations) - 1)]
+        return affordable_combinations[random.randint(0, len(affordable_combinations) - 1)][0]
 
-    return affordable_combinations
+    return affordable_combinations[0][0]
 
 
 def create_security_mechanism_combinations():
@@ -159,7 +168,7 @@ def create_security_mechanism_combinations():
     # delete existing security_mechanism_combination table
     db_cursor.execute("DROP TABLE if exists security_mechanisms_combination")
 
-    # create table security_mechanisms_combination with predefined (combination, weight, value) and dynmaic columns (available security mechanism columns)
+    # create table security_mechanisms_combination with predefined (combination, weight, received_message_value) and dynmaic columns (available security mechanism columns)
     security_mechanisms_name_deque = deque(["combination", "weight", "value"])
     security_mechanisms_name_deque.extend(deque((itertools.chain(*get_security_mechanisms_information_name()))))
     create_combination_query = "CREATE TABLE if not exists security_mechanisms_combination(%s)" % ", ".join(security_mechanisms_name_deque)
@@ -188,8 +197,7 @@ def create_security_mechanism_combinations():
         for mode in range(modes):
             try:
                 security_modes[f"{mechanism_name}_list"].append(mechanism_name + f"{mode}")
-
-                # create dictionaries with the security mechanism mode as the keys and the mode_weight and mode_value costs as the value
+                # create dictionaries with the security mechanism mode as the keys and the mode_weight and mode_value costs as the received_message_value
                 security_mode_weight_costs[mechanism_name + f"{mode}"] = (mode_weights[mode], mode_values[mode])
 
             except IndexError:
@@ -238,7 +246,7 @@ def create_security_mechanism_combinations():
         db_cursor.execute(insert_query_string, insert_deque)
     db_connection.commit()
 
-    # TODO store in database: combination: list_element; weight = sum_weights; value = sum_values; --> all mechanisms from list_element with only the integer
+    # TODO store in database: combination: list_element; weight = sum_weights; received_message_value = sum_values; --> all mechanisms from list_element with only the integer
 
     # sort dict after values to get an order of the security mechanism combination costs
     # combination_cost = dict(sorted(combination_cost.items(), key=lambda item: item[1]))
