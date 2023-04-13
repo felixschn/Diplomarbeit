@@ -4,8 +4,6 @@ from inspect import getframeinfo, currentframe
 
 import context_information_database
 
-combination_cost = {}
-
 
 def apply_filters(context_information_dict) -> list:
     necessary_modes_list = []
@@ -51,36 +49,14 @@ def apply_filters(context_information_dict) -> list:
 
 # function to create all possible permutations of all security mechanisms; returns dict.keys()
 def calculate_best_combination(weight, max_weight, context_information_dict):
-    # create a dict to store all affordable security mechanism combinations
-    affordable_options = {}
-
+    # call filter files to retrieve necessary security mechanism modes depending on the context information
     necessary_modes = apply_filters(context_information_dict)
 
-    min_lvl = math.ceil(weight / max_weight * context_information_database.get_max_weight_combination())
-    print("min_lvl: ", min_lvl)
+    # calculate the weight limit for combinations to choose
+    combination_weight_limit = math.ceil(weight / max_weight * context_information_database.get_max_weight_combination())
+    print("combination_weight_limit: ", combination_weight_limit)
 
-    best_affordable_combination = context_information_database.get_best_affordable_combination(min_lvl, necessary_modes)
+    # query the database for the best affordable combinations (best means highest value and lowest weight)
+    best_affordable_combination = context_information_database.get_best_affordable_combination(combination_weight_limit, necessary_modes)
 
     return best_affordable_combination
-
-
-# TODO function where apply_filters reduces amount of permutations with respect to specific context inforamtion
-
-# create permutations for the hard-coded options list from above; this can be done more easily with itertools
-def permute_options(fwl, idl, acl) -> list:
-    possible_protection_settings = []
-    for fw in range(len(fwl)):
-        for id in range(len(idl)):
-            for ac in range(len(acl)):
-                possible_protection_settings.extend(list(zip(fwl, idl, acl)))
-                acl.append(acl[0])
-                acl = acl[1:]
-            idl.append(idl[0])
-            idl = idl[1:]
-        fwl.append(fwl[0])
-        fwl = fwl[1:]
-
-    possible_protection_settings = list(dict.fromkeys(possible_protection_settings))  # remove duplicates
-    possible_protection_settings = sorted(possible_protection_settings, key=lambda x: order[x])
-
-    return possible_protection_settings
