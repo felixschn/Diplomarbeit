@@ -7,6 +7,7 @@ import Server.Messages.message_keystore_information as message_keystore_informat
 import Server.Messages.message_security_mechanism_information as message_security_mechanisms_information
 import Server.Messages.message_filter_file as message_filter_file
 import Server.Messages.message_security_mechanism_file as message_security_mechanism_file
+import Server.Simulation.sumo_simulation as sumo_simulation
 
 sock = None
 
@@ -18,7 +19,7 @@ def connection_to_server(message_name):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Connect to server and send data
 
-    for port in range(64997, 65000):
+    for port in range(64999, 65000):
         try:
 
             sock.connect((HOST, port))
@@ -51,8 +52,12 @@ if __name__ == '__main__':
     thread_security_mechanism_file.join()
 
 
-    thread_context_information = threading.Thread(target=message_context_information.send_context_information, args=(connection_to_server('context_information'),))
+    # thread_context_information = threading.Thread(target=message_context_information.send_context_information, args=(connection_to_server('context_information'),))
+    # thread_context_information.start()
+
+    thread_context_information = threading.Thread(target=sumo_simulation.simulation_data, args=(connection_to_server('context_information'),))
     thread_context_information.start()
+    thread_context_information.join()
 
     thread_keystore_information = threading.Thread(target=message_keystore_information.send_keystore_update, args=(connection_to_server('keystore_information'),))
     thread_keystore_information.start()
