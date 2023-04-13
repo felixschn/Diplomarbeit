@@ -1,9 +1,7 @@
 import ast
-import math
 import sqlite3
 
-import Client.context_information_database as cid
-import Client.reasoning
+import Client.context_information_database as context_information_database
 
 
 # high weight means   option for more security features
@@ -18,9 +16,9 @@ import Client.reasoning
 
 
 # TODO rename functions
-def calculate_weights(context_information_dict) -> tuple[float, float]:
+def evaluate_weight(context_information_dict) -> tuple[float, float]:
     # create database cursor
-    db_cursor = cid.get_cursor()
+    db_cursor = context_information_database.get_cursor()
 
     # check if any keystore information is available in the database, otherwise no calculation can be done
     try:
@@ -31,8 +29,8 @@ def calculate_weights(context_information_dict) -> tuple[float, float]:
     except sqlite3.OperationalError:
         print("""\n[ERROR]:database doesn't contain keystore table; context information cannot be processed without keystore information;
             waiting for keystore update message\n""")
-        # TODO check if this return value is correct
-        return None, None
+        # TODO check if this return received_message_value is correct
+        return (None, None)
 
     keystore_dict = {}
     for i in keystore_list:
@@ -66,46 +64,46 @@ def calculate_weights(context_information_dict) -> tuple[float, float]:
                 continue
 
             # calculate weight for triple and add it to the weight_sum
-            weight_sum += distance(context_information_dict['battery_state'],
-                                   context_information_dict['charging_station_distance'],
-                                   context_information_dict['battery_consumption'], weight, minimum_value, maximum_value, desirable_value)
+            weight_sum += weight_calculation_distance(context_information_dict['battery_state'],
+                                                      context_information_dict['charging_station_distance'],
+                                                      context_information_dict['battery_consumption'], weight, minimum_value, maximum_value, desirable_value)
 
-            # TODO is this really the right way to get the maximum weight when triple state, consumption and distance have different weights (in the db)
+            # TODO is this really the right way to get the maximum weight when triple state, consumption and weight_calculation_distance have different weights (in the db)
             max_weight += weight
             pass
 
         else:
             # if the key is not one of the three listed above, the weight will be calculated or normalized using their specific parameters
-            weight_sum += normalized_weight(context_information_dict[key], minimum_value, maximum_value, desirable_value, weight)
+            weight_sum += weight_calculation_standard(context_information_dict[key], minimum_value, maximum_value, desirable_value, weight)
             max_weight += weight
 
     return weight_sum, max_weight
 
 
 # TODO rename functions
-def normalized_weight(value, minimum_value, maximum_value, desirable_value, weight) -> float:
-    # normalizing data because of different values (due to units e.g. 1000km distance vs 75% battery)
-    # only to see if the value is more on the left or on the right of the scale
+def weight_calculation_standard(received_message_value, minimum_value, maximum_value, desirable_value, weight) -> float:
+    # normalizing data because of different values (due to units e.g. 1000km weight_calculation_distance vs 75% battery)
+    # only to see if the received_message_value is more on the left or on the right of the scale
     middle = (maximum_value - minimum_value) / 2
     if desirable_value > middle:
-        if value > desirable_value:
+        if received_message_value > desirable_value:
             return weight
-        normalized = (value - minimum_value) / (desirable_value - minimum_value)
+        normalized = (received_message_value - minimum_value) / (desirable_value - minimum_value)
         return normalized * weight
     else:
-        if value < desirable_value:
+        if received_message_value < desirable_value:
             return weight
-        normalized = (value - desirable_value) / (maximum_value - desirable_value)
-        # when left then subtract normalized value from 1
+        normalized = (received_message_value - desirable_value) / (maximum_value - desirable_value)
+        # when left then subtract normalized received_message_value from 1
         return (1 - normalized) * weight
 
 
-def distance(charge, distance, consumption, weight, minimum_value, maximum_value, desirable_value) -> float:
+def weight_calculation_distance(charge, distance, consumption, weight, minimum_value, maximum_value, desirable_value) -> float:
     # charge                              in   %
-    # distance to next charging point     in   km
+    # weight_calculation_distance to next charging point     in   km
     # consumption                         in   kWh / 100km
 
-    capacity = 100  # in  kWh     TODO: edit param battery capacity or transmit value
+    capacity = 100  # in  kWh     TODO: edit param battery capacity or transmit received_message_value
     max_reserve = 3
     min_reserve = 1
     charge = charge / 100 * capacity
@@ -128,38 +126,4 @@ def distance(charge, distance, consumption, weight, minimum_value, maximum_value
         return weight
 
     print("reserve is good")
-    return normalized_weight(reserve, min_reserve, max_reserve, max_reserve, weight)
-
-
-def choose_option(weight, max_weight, options):
-    # easiest way
-
-    # calculate the resulted weight's position; a set of possible options is portioned on a scale, i.e., if only a subset of the possible options is
-    # available, they are divided on the scale with their specific values.That means, if the min_lvl is, for example, 7, and there are only 4 options with
-    # values greater than 7, the position will be 0
-
-    # TODO check if there are options with the same weight --> currently there is no solution for this; they will have the same order and the one,
-    #  who was inserted first, would be choosen
-
-    # create a dict to store all affordable security mechanism combinations
-    affordable_options = {}
-    min_lvl = math.ceil(weight / max_weight * max(Client.reasoning.combination_cost.values())[0])
-    print("min_lvl2: ", min_lvl)
-
-    # loop through the combination_cost dict from the reasoning.py file and store all key-value pairs in the affordable_options dict, which have weights
-    # smaller than the min_lvl
-    for item in Client.reasoning.combination_cost.keys():
-        if Client.reasoning.combination_cost[item][0] <= min_lvl:
-            affordable_options[item] = Client.reasoning.combination_cost[item]
-
-    # TODO what should the program return, if theres is no affordable security_mechanism combination --> no security mechanisms or risk to run out of battery
-    if len(affordable_options) == 0:
-        print("There are no affordable security_mechanisms available; Should car run without any mechanisms ?? \n\n")
-        return
-
-    # return the option with the highest value_sum
-    return max(affordable_options, key=lambda x: affordable_options[x][1])
-
-    # pos_lvl = bisect_left(options, min_lvl, key=lambda x: Client.reasoning.combination_cost[x][0])
-    # print("position lvl 2: ", pos_lvl)
-    # return options[pos_lvl] 
+    return weight_calculation_standard(reserve, min_reserve, max_reserve, max_reserve, weight)
