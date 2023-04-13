@@ -19,9 +19,8 @@ DELIMITER = "<delimiter>"
 
 # the range of possible port numbers must be n-1 with respect to the for loop in the function called connection to server in main.py, or else the server will
 # listen to a port that has never been called from the client
-PORT = random.randint(64997, 64999)
+PORT = random.randint(64999, 64999)
 time_format = '%Y-%m-%dT%H:%M:%S.%f'
-path = "D:\PyCharm Projects\Diplomarbeit\Client\Filter"
 
 
 def reload_retrieved_modules(filename, module_path):
@@ -151,7 +150,7 @@ def process_message_context_information(received_data_dict):
         print("timestamp error while comparing the latest database entry with received context information")
 
     try:
-        weight, max_weight = Client.weights.calculate_weights(received_data_dict)
+        weight, max_weight = Client.weights.evaluate_weight(received_data_dict)
         received_data_dict['weight'] = weight
         print("calculated weight: ", weight)
 
