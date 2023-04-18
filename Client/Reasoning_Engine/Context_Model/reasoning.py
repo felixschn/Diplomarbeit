@@ -2,11 +2,12 @@ import math
 from importlib import import_module
 from inspect import getframeinfo, currentframe
 
-import context_information_database
+import Client.Data_Engine.context_information_database as context_information_database
 
 
 def apply_filters(context_information_dict) -> list:
     necessary_modes_list = []
+    available_security_mechanisms_list = context_information_database.get_security_mechanisms_information_name()
 
     try:
         # better to access information through the database instead of iterating through the filter directory, which prevents the execution of unknown (
@@ -26,7 +27,7 @@ def apply_filters(context_information_dict) -> list:
 
         # try to import the filter_file from Filter directory
         try:
-            imported_mod = import_module(f"Client.Filter.{formatted_file_name}")
+            imported_mod = import_module(f"Client.Reasoning_Engine.Filter.{formatted_file_name}")
 
         except Exception as e:
             # TODO monitor the behavior of the program because sometimes an error occurs (maybe the function can't import the module because the filter file gets overwritten by an update message)
@@ -37,7 +38,7 @@ def apply_filters(context_information_dict) -> list:
         try:
             call_filter = getattr(imported_mod, 'execute_filter')
             # merge the returned list of the filter files to the necessary_modes_list
-            necessary_modes_list += (call_filter(context_information_dict))
+            necessary_modes_list += (call_filter(available_security_mechanisms_list, context_information_dict))
 
         except:
             print("""some of the files in the Filter directory aren't usable filters""")
