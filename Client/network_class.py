@@ -8,10 +8,10 @@ from inspect import getframeinfo, currentframe
 
 import tqdm
 
-import Client.reasoning
+import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weights
+import Client.Reasoning_Engine.Context_Model.reasoning
 import Client.set_security_mechanisms
-import Client.weights
-import context_information_database
+from Client.Data_Engine import context_information_database
 
 HOST = "localhost"
 BUFFER_SIZE = 4096
@@ -33,6 +33,40 @@ def reload_retrieved_modules(filename, module_path):
     reload(imported_mod)
 
 
+def process_message_weight_calculation_file(received_data, connection_handler):
+    # check if received data is not empty
+    if len(received_data) == 0:
+        return
+
+    print(f"Empfangen: {received_data}\n")
+
+    _, filename, size_of_file, file_content = received_data.split(DELIMITER)
+    filename = os.path.basename(filename)
+    size_of_file = int(size_of_file)
+    show_progress = tqdm.tqdm(range(size_of_file), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
+
+    # write the received data to a file in the 'Weight_Calculation' directory
+    with open(f"D:\PyCharm Projects\Diplomarbeit\Client\Reasoning_Engine\Context_Model\Weight_Calculation\\{filename}", "wb") as received_file:
+        while True:
+            read_data = connection_handler.request.recv(BUFFER_SIZE)
+
+            # break out of the loop if no further data is received
+            if not read_data:
+                print("---- Received read_data was empty ----")
+                break
+
+            # write the retrieved data to the file
+            received_file.write(read_data)
+            # update the process bar
+            show_progress.update(len(read_data))
+
+    # reloading the modules to process context information with the newest data
+    reload_retrieved_modules(filename, "Client.Reasoning_Engine.Context_Model.Weight_Calculation.")
+
+    # update the database with a filter name from the added filter file
+    context_information_database.update_weight_calculation_files(filename)
+
+
 def process_message_security_mechanism_file(received_data, connection_handler):
     # check if the received data is not empty
     if len(received_data) == 0:
@@ -46,7 +80,7 @@ def process_message_security_mechanism_file(received_data, connection_handler):
     size_of_file = int(size_of_file)
     show_progress = tqdm.tqdm(range(size_of_file), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
 
-    # write the received data to a file in the 'Filter' directory
+    # write the received data to a file in the 'Security_Mechanisms' directory
     with open(f"D:\PyCharm Projects\Diplomarbeit\Client\Security_Mechanisms\\{filename}", "wb") as received_file:
         while True:
             read_data = connection_handler.request.recv(BUFFER_SIZE)
@@ -64,6 +98,9 @@ def process_message_security_mechanism_file(received_data, connection_handler):
     # reloading the modules to process context information with the newest data
     reload_retrieved_modules(filename, "Client.Security_Mechanisms.")
 
+    # update the database with a filter name from the added filter file
+    #context_information_database.update_security_mechanisms_file(filename)
+
 
 def process_message_filter_file(received_data, connection_handler):
     # check if the received data is not empty
@@ -79,7 +116,7 @@ def process_message_filter_file(received_data, connection_handler):
     show_progress = tqdm.tqdm(range(size_of_file), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
 
     # write the received data to a file in the 'Filter' directory
-    with open(f"D:\PyCharm Projects\Diplomarbeit\Client\Filter\{filename}", "wb") as received_file:
+    with open(f"D:\PyCharm Projects\Diplomarbeit\Client\Reasoning_Engine\Filter\\{filename}", "wb") as received_file:
         while True:
             read_data = connection_handler.request.recv(BUFFER_SIZE)
 
@@ -94,7 +131,7 @@ def process_message_filter_file(received_data, connection_handler):
             show_progress.update(len(read_data))
 
     # reloading the modules to process context information with the newest data
-    reload_retrieved_modules(filename, "Client.Filter.")
+    reload_retrieved_modules(filename, "Client.Reasoning_Engine.Filter.")
 
     # update the database with a filter name from the added filter file
     context_information_database.update_security_mechanisms_filter(filename)
@@ -138,19 +175,19 @@ def process_message_context_information(received_data_dict):
         print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno, """while comparing system time with received context information in""")
         return
 
-    try:
-        if datetime.strptime(received_data_dict['elicitation_date'], time_format) < datetime.strptime(
-                context_information_database.get_latest_date_entry(db_table_name), time_format):
-            # TODO decide how to deal with received data which is older then the latest database entry --> save but not process or not even save?
-            print("Received context information is older than the latest database entry")
-            print("Context data will be ignored")
-            print("-----------------------------")
-            return
-    except:
-        print("timestamp error while comparing the latest database entry with received context information")
+    # try:
+    #     if datetime.strptime(received_data_dict['elicitation_date'], time_format) < datetime.strptime(
+    #             context_information_database.get_latest_date_entry(db_table_name), time_format):
+    #         # TODO decide how to deal with received data which is older then the latest database entry --> save but not process or not even save?
+    #         print("Received context information is older than the latest database entry")
+    #         print("Context data will be ignored")
+    #         print("-----------------------------")
+    #         return
+    # except:
+    #     print("timestamp error while comparing the latest database entry with received context information")
 
     try:
-        weight, max_weight = Client.weights.evaluate_weight(received_data_dict)
+        weight, max_weight = Client.Reasoning_Engine.Context_Model.Weight_Calculation.weights.evaluate_weight(received_data_dict)
         received_data_dict['weight'] = weight
         print("calculated weight: ", weight)
 
@@ -161,7 +198,7 @@ def process_message_context_information(received_data_dict):
         return
 
     try:
-        best_option = Client.reasoning.calculate_best_combination(weight, max_weight, received_data_dict)
+        best_option = Client.Reasoning_Engine.Context_Model.reasoning.calculate_best_combination(weight, max_weight, received_data_dict)
         print(best_option, "\n")
         received_data_dict['best_option'] = str(best_option)
 
@@ -206,6 +243,9 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
             if "security_mechanism_file" in self.data.decode():
                 process_message_security_mechanism_file(self.data.decode(), self)
                 continue
+
+            if "weight_calculation_file" in self.data.decode():
+                process_message_weight_calculation_file(self.data.decode(), self)
 
             # create a dict out of the received data and forward the data to designated methods to process the data for context evaluation
             try:
