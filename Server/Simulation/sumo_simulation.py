@@ -30,12 +30,14 @@ def simulation_data(sock):
 
         traci.vehicle.setColor("main_trip", (0, 255, 255))
         driven_distance = traci.vehicle.getDistance("main_trip")
-        charging_station_distance = traci.vehicle.getDrivingDistance("main_trip", "-5115636#7", traci.vehicle.getLanePosition("main_trip"))
+        trip_distance = traci.vehicle.getDrivingDistance("main_trip", "-5115636#7", traci.vehicle.getLanePosition("main_trip"))
         following_car_distance = traci.vehicle.getFollower("main_trip")
-        accumulated_waiting_time = traci.vehicle.getAccumulatedWaitingTime("main_trip")
-        battery_state = traci.vehicle.getParameter("main_trip", "device.battery.actualBatteryCapacity")
-        battery_consumption = traci.vehicle.getParameter("main_trip", "device.battery.energyConsumed")
-        total_energy_consumption = traci.vehicle.getParameter("main_trip", "device.battery.totalEnergyConsumed")
+        accumulated_waiting_time = float(traci.vehicle.getAccumulatedWaitingTime("main_trip"))
+        battery_state = float(traci.vehicle.getParameter("main_trip", "device.battery.actualBatteryCapacity"))
+        battery_consumption = float(traci.vehicle.getParameter("main_trip", "device.battery.energyConsumed"))
+        total_energy_consumption = float(traci.vehicle.getParameter("main_trip", "device.battery.totalEnergyConsumed"))
+        battery_maximum_capacity = float(traci.vehicle.getParameter("main_trip", "device.battery.maximumBatteryCapacity"))
+        battery_state_percentage = battery_state / battery_maximum_capacity *100
 
         print("----------------------------\nDistance: ", traci.vehicle.getDistance("main_trip"))
         print("Distance_To_Target : ", traci.vehicle.getDrivingDistance("main_trip", "-5115636#7", traci.vehicle.getLanePosition("main_trip")))
@@ -54,7 +56,7 @@ def simulation_data(sock):
 
         if sock:
             time_format = '%Y-%m-%dT%H:%M:%S.%f'
-            context_information = {'battery_state': battery_state, 'battery_consumption': battery_consumption, 'charging_station_distance': charging_station_distance, 'location': 125, 'elicitation_date': datetime.now().strftime(time_format), 'message_type': 'context_information'}
+            context_information = {'battery_state': battery_state_percentage, 'battery_consumption': battery_consumption, 'trip_distance': trip_distance, 'location': 125, 'elicitation_date': datetime.now().strftime(time_format), 'message_type': 'context_information'}
             sock.send(bytes(json.dumps(context_information), encoding='utf-8'))
             print(json.dumps(context_information))
 
