@@ -13,7 +13,7 @@ db_connection: sqlite3.dbapi2 = None
 def get_cursor():
     global db_connection
     if db_connection is None:
-        db_name = 'context_information_database.sqlite'
+        db_name = 'D:\PyCharm Projects\Diplomarbeit\Client\Data_Engine\context_information_database.sqlite'
 
         # https://stackoverflow.com/questions/12932607/how-to-check-if-a-sqlite3-database-exists-in-python
         # read, write, create database at given path
@@ -122,10 +122,10 @@ def get_max_weight_combination() -> int:
 def get_best_affordable_combination(combination_weight_limit, necessary_modes):
     db_cursor = get_cursor()
 
-    # create a query to retrieve the security mechanism combination with the highest received_message_value and lowest weight depending on several conditions like weight or
+    # create a query to retrieve the security mechanism combination with the highest value and lowest weight depending on several conditions like weight or
     # necessary modes
     combination_query = 'SELECT * from ('
-    combination_query_max_value = 'SELECT * from security_mechanisms_combination WHERE received_message_value = (SELECT MAX(received_message_value) from security_mechanisms_combination WHERE weight <= ?'
+    combination_query_max_value = 'SELECT * from security_mechanisms_combination WHERE value = (SELECT MAX(value) from security_mechanisms_combination WHERE weight <= ?'
     combination_query_min_value = 'WHERE weight = (SELECT MIN(weight) from ('
 
     # add the necessary modes to the combination_query_max_value
@@ -144,16 +144,16 @@ def get_best_affordable_combination(combination_weight_limit, necessary_modes):
 
     # check if affordable_combinations is empty
     if not affordable_combinations:
-        # query to find the combination with the highest received_message_value and lowest weight without considering necessary modes because there was no affordable
+        # query to find the combination with the highest value and lowest weight without considering necessary modes because there was no affordable
         # option when considering all necessary modes
-        alternative_combination_query = """SELECT * from (SELECT * from security_mechanisms_combination WHERE received_message_value = 
-                                        (SELECT MAX(received_message_value) from security_mechanisms_combination WHERE weight <= ?)) WHERE weight = 
-                                        (SELECT MIN(weight) from (SELECT * from security_mechanisms_combination WHERE received_message_value = 
-                                        (SELECT MAX(received_message_value) from security_mechanisms_combination WHERE weight <= ?)))"""
+        alternative_combination_query = """SELECT * from (SELECT * from security_mechanisms_combination WHERE value = 
+                                        (SELECT MAX(value) from security_mechanisms_combination WHERE weight <= ?)) WHERE weight = 
+                                        (SELECT MIN(weight) from (SELECT * from security_mechanisms_combination WHERE value = 
+                                        (SELECT MAX(value) from security_mechanisms_combination WHERE weight <= ?)))"""
         affordable_combinations = db_cursor.execute(alternative_combination_query, (combination_weight_limit, combination_weight_limit,)).fetchall()
 
     elif len(affordable_combinations) > 1:
-        # TODO think about what to do in case both the weight and received_message_value of the chosen combinations are equal --> Normally, the program should have chosen
+        # TODO think about what to do in case both the weight and value of the chosen combinations are equal --> Normally, the program should have chosen
         #  equally strong mechanism combinations, so which combination the program chooses is unimportant.
 
         # return one of the combinations randomly
@@ -168,7 +168,7 @@ def create_security_mechanism_combinations():
     # delete existing security_mechanism_combination table
     db_cursor.execute("DROP TABLE if exists security_mechanisms_combination")
 
-    # create table security_mechanisms_combination with predefined (combination, weight, received_message_value) and dynmaic columns (available security mechanism columns)
+    # create table security_mechanisms_combination with predefined (combination, weight, value) and dynmaic columns (available security mechanism columns)
     security_mechanisms_name_deque = deque(["combination", "weight", "value"])
     security_mechanisms_name_deque.extend(deque((itertools.chain(*get_security_mechanisms_information_name()))))
     create_combination_query = "CREATE TABLE if not exists security_mechanisms_combination(%s)" % ", ".join(security_mechanisms_name_deque)
@@ -186,7 +186,7 @@ def create_security_mechanism_combinations():
               """retireved no security mechanisms information from database""")
         return
 
-    # loop through all entries, create a key for the dict from the mechanism_name, and add all the modes to a list as values of the dict
+    # loop through all security_mechanisms_list entries, create a key for the dict from the mechanism_name, and add all the modes to a list as values of the dict
     for (mechanism_name, modes, mode_weights, mode_values) in security_mechanisms_list:
         # deserialize mode_weights and mode_values from database table security_mechanism_information
         mode_weights = json.loads(mode_weights)
@@ -197,7 +197,7 @@ def create_security_mechanism_combinations():
         for mode in range(modes):
             try:
                 security_modes[f"{mechanism_name}_list"].append(mechanism_name + f"{mode}")
-                # create dictionaries with the security mechanism mode as the keys and the mode_weight and mode_value costs as the received_message_value
+                # create dictionaries with the security mechanism mode as the keys and the mode_weight and mode_value costs as the value
                 security_mode_weight_costs[mechanism_name + f"{mode}"] = (mode_weights[mode], mode_values[mode])
 
             except IndexError:
@@ -246,11 +246,34 @@ def create_security_mechanism_combinations():
         db_cursor.execute(insert_query_string, insert_deque)
     db_connection.commit()
 
-    # TODO store in database: combination: list_element; weight = sum_weights; received_message_value = sum_values; --> all mechanisms from list_element with only the integer
+    # TODO store in database: combination: list_element; weight = sum_weights; value = sum_values; --> all mechanisms from list_element with only the integer
 
     # sort dict after values to get an order of the security mechanism combination costs
     # combination_cost = dict(sorted(combination_cost.items(), key=lambda item: item[1]))
 
+
+def update_weight_calculation_files(filename):
+    db_cursor = get_cursor()
+
+    create_calculation_files_query = """CREATE TABLE if not exists weight_calculation_files(weight_calculation_name)"""
+    db_cursor.execute(create_calculation_files_query)
+
+    current_columns = db_cursor.execute("SELECT weight_calculation_name FROM weight_calculation_files").fetchall()
+    if len(current_columns) == 0:
+        pass
+
+    elif filename in [elem[0] for elem in current_columns]:
+        update_query = """UPDATE weight_calculation_files SET weight_calculation_name = ?"""
+        query_params = filename
+        db_cursor.execute(update_query, (query_params,))
+        db_connection.commit()
+        return
+
+    insert_weight_calculation_query = """INSERT INTO weight_calculation_files(weight_calculation_name) VALUES (?)"""
+    query_params = filename
+    db_cursor.execute(insert_weight_calculation_query, (query_params,))
+    db_connection.commit()
+    return
 
 def update_security_mechanisms_filter(filename):
     db_cursor = get_cursor()
@@ -264,7 +287,6 @@ def update_security_mechanisms_filter(filename):
 
     elif filename in [elem[0] for elem in current_columns]:
         update_query = """UPDATE security_mechanisms_filter SET filter_name = ?"""
-
         query_params = filename
         db_cursor.execute(update_query, (query_params,))
         db_connection.commit()
