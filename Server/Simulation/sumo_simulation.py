@@ -1,9 +1,12 @@
+import collections
 import json
 import os
 import sys
 from datetime import datetime
 
 import traci
+
+battery_consumption_buffer = collections.deque(maxlen=20)
 
 
 def simulation_data(sock):
@@ -27,7 +30,6 @@ def simulation_data(sock):
             traci.close()
             return
 
-
         traci.vehicle.setColor("main_trip", (0, 255, 255))
         driven_distance = traci.vehicle.getDistance("main_trip")
         trip_distance = traci.vehicle.getDrivingDistance("main_trip", "-5115636#7", traci.vehicle.getLanePosition("main_trip"))
@@ -35,9 +37,17 @@ def simulation_data(sock):
         accumulated_waiting_time = float(traci.vehicle.getAccumulatedWaitingTime("main_trip"))
         battery_state = float(traci.vehicle.getParameter("main_trip", "device.battery.actualBatteryCapacity"))
         battery_consumption = float(traci.vehicle.getParameter("main_trip", "device.battery.energyConsumed"))
+        battery_consumption_buffer.append(battery_consumption)
+
+        # calculate average battery consumption if buffer is at least filled with 10 battery consumption values; else define average as 1
+        if len(battery_consumption_buffer) < 10:
+            battery_consumption_average = 1
+        else:
+            battery_consumption_average = sum(battery_consumption_buffer) / len(battery_consumption_buffer)
+
         total_energy_consumption = float(traci.vehicle.getParameter("main_trip", "device.battery.totalEnergyConsumed"))
         battery_maximum_capacity = float(traci.vehicle.getParameter("main_trip", "device.battery.maximumBatteryCapacity"))
-        battery_state_percentage = battery_state / battery_maximum_capacity *100
+        battery_state_percentage = battery_state / battery_maximum_capacity * 100
 
         print("----------------------------\nDistance: ", traci.vehicle.getDistance("main_trip"))
         print("Distance_To_Target : ", traci.vehicle.getDrivingDistance("main_trip", "-5115636#7", traci.vehicle.getLanePosition("main_trip")))
@@ -49,14 +59,16 @@ def simulation_data(sock):
         print("Energy_Charged: ", traci.vehicle.getParameter("main_trip", "device.battery.energyCharged"))
         print("Electricity_Consumption: ", traci.vehicle.getElectricityConsumption("main_trip"))
 
-        #traci.vehicle.setParameter("main_trip", "device.battery.actualBatteryCapacity", 500)
-        #print("Battery Capacity: ", traci.vehicle.getParameter("main_trip", "device.battery.actualBatteryCapacity"))
+        # traci.vehicle.setParameter("main_trip", "device.battery.actualBatteryCapacity", 500)
+        # print("Battery Capacity: ", traci.vehicle.getParameter("main_trip", "device.battery.actualBatteryCapacity"))
 
         traci.vehicle.getRoute("main_trip")
 
         if sock:
             time_format = '%Y-%m-%dT%H:%M:%S.%f'
-            context_information = {'battery_state': battery_state_percentage, 'battery_consumption': battery_consumption, 'trip_distance': trip_distance, 'location': 125, 'elicitation_date': datetime.now().strftime(time_format), 'message_type': 'context_information'}
+            context_information = {'battery_state': battery_state_percentage, 'battery_consumption': battery_consumption_average,
+                                   'trip_distance': trip_distance / 1000,
+                                   'location': 125, 'elicitation_date': datetime.now().strftime(time_format), 'message_type': 'context_information'}
             sock.send(bytes(json.dumps(context_information), encoding='utf-8'))
             print(json.dumps(context_information))
 
