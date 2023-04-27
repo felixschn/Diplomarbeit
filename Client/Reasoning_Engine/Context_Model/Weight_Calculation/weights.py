@@ -1,10 +1,9 @@
 import sqlite3
-from inspect import getframeinfo, currentframe
 from importlib import import_module
+from inspect import getframeinfo, currentframe
 
 import Client.Data_Engine.context_information_database as context_information_database
 import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_calculation_standard as weight_standard
-
 
 # high weight means   option for more security features
 # low weight means    not enough power or threads for sec features
@@ -17,6 +16,7 @@ import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_calculati
 #                                  "location": 41, "elicitation_date": "2022-12-13T19:47:40.996571"}
 max_weight = 0
 high_level_context_information_list = []
+
 
 def evaluate_weight(context_information_dict) -> tuple[float, float]:
     # create database cursor
@@ -46,7 +46,6 @@ def evaluate_weight(context_information_dict) -> tuple[float, float]:
     for key in context_information_dict.keys():
         if key in keystore_dict:
             evaluation_dict[key] = context_information_dict[key]
-
 
     try:
         weight_files_query = "SELECT * FROM weight_calculation_files"
@@ -80,11 +79,9 @@ def evaluate_weight(context_information_dict) -> tuple[float, float]:
             print("""some of the files in the Filter directory aren't usable filters""")
             continue
 
-
+    calculated_weight += weight_standard.weight_standard(evaluation_dict, keystore_dict)
 
     return calculated_weight, max_weight
-
-
 
     #
     # # define weight parameters for calculation and evaluation
