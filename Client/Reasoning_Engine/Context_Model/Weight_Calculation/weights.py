@@ -23,6 +23,7 @@ def evaluate_weight(context_information_dict) -> tuple[float, float]:
     global max_weight, high_level_context_information_list
     db_cursor = context_information_database.get_cursor()
     calculated_weight = 0
+    max_weight = 0
 
     # check if any keystore information is available in the database, otherwise no calculation can be done
     try:
