@@ -208,13 +208,15 @@ def process_message_context_information(received_data_dict):
               """best_option calculation was not possible\n further message processing not possible""")
         return
 
+    # convert location tuple with long and lat to string in order to save it in the database
+    received_data_dict["location"] = str(received_data_dict["location"])
     # save context information with best option evaluation to the database
     context_information_database.update_context_information(received_data_dict)
 
     # check if the best_option tuple is not empty
-    if best_option:
+    # if best_option:
         # give best_option to set_security_mechanisms function in order to set the appropriated mechanisms and their modes
-        Client.set_security_mechanisms.set_security_mechanisms(best_option)
+        #Client.set_security_mechanisms.set_security_mechanisms(best_option)
 
 
 class ConnectionTCPHandler(socketserver.StreamRequestHandler):
