@@ -57,13 +57,6 @@ if __name__ == '__main__':
     thread_security_mechanism_file.start()
     thread_security_mechanism_file.join()
 
-    # thread_context_information = threading.Thread(target=message_context_information.send_context_information, args=(connection_to_server('context_information'),))
-    # thread_context_information.start()
-
-    thread_context_information = threading.Thread(target=sumo_simulation.simulation_data, args=(connection_to_server('context_information'),))
-    thread_context_information.start()
-    thread_context_information.join()
-
     thread_keystore_information = threading.Thread(target=message_keystore_information.send_keystore_update,
                                                    args=(connection_to_server('keystore_information'),))
     thread_keystore_information.start()
@@ -71,6 +64,13 @@ if __name__ == '__main__':
     thread_security_mechanisms_information = threading.Thread(target=message_security_mechanisms_information.send_security_mechanisms_information,
                                                               args=(connection_to_server('security_mechanisms_information'),))
     thread_security_mechanisms_information.start()
+
+    # thread_context_information = threading.Thread(target=message_context_information.send_context_information, args=(connection_to_server('context_information'),))
+    # thread_context_information.start()
+
+    thread_context_information = threading.Thread(target=sumo_simulation.simulation_data, args=(connection_to_server('context_information'),))
+    thread_context_information.start()
+    thread_context_information.join()
 
     print(threading.active_count())
     print(threading.enumerate())
