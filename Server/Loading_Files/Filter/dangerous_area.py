@@ -10,4 +10,4 @@ def execute_filter(available_security_mechanisms_list, evaluation_dict) -> list:
                 if current_longitude <= dangerous_area_corner_1[1]:
                     return necessary_modes
 
-    return available_security_mechanisms_list
+    return []
