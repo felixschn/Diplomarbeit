@@ -40,7 +40,9 @@ def process_message_weight_calculation_file(received_data, connection_handler):
 
     print(f"Empfangen: {received_data}\n")
 
+    # store the received data in variables
     _, filename, size_of_file, file_content = received_data.split(DELIMITER)
+
     filename = os.path.basename(filename)
     size_of_file = int(size_of_file)
     show_progress = tqdm.tqdm(range(size_of_file), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
@@ -74,8 +76,9 @@ def process_message_security_mechanism_file(received_data, connection_handler):
 
     print(f"Empfangen: {received_data}\n")
 
-    # store the received data in various variables
+    # store the received data in variables
     _, filename, size_of_file, file_content = received_data.split(DELIMITER)
+
     filename = os.path.basename(filename)
     size_of_file = int(size_of_file)
     show_progress = tqdm.tqdm(range(size_of_file), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
@@ -99,7 +102,7 @@ def process_message_security_mechanism_file(received_data, connection_handler):
     reload_retrieved_modules(filename, "Client.Security_Mechanisms.")
 
     # update the database with a filter name from the added filter file
-    #context_information_database.update_security_mechanisms_file(filename)
+    context_information_database.update_security_mechanisms_file(filename)
 
 
 def process_message_filter_file(received_data, connection_handler):
@@ -157,10 +160,6 @@ def process_message_security_mechanisms_information(received_data_dict):
     context_information_database.create_security_mechanism_combinations()
 
 
-def process_message_security_mechanisms_filter(received_data_dict):
-    context_information_database.update_security_mechanisms_filter(received_data_dict)
-
-
 def process_message_context_information(received_data_dict):
     global weight, max_weight
     db_table_name = 'received_context_information'
@@ -215,8 +214,8 @@ def process_message_context_information(received_data_dict):
 
     # check if the best_option tuple is not empty
     # if best_option:
-        # give best_option to set_security_mechanisms function in order to set the appropriated mechanisms and their modes
-        #Client.set_security_mechanisms.set_security_mechanisms(best_option)
+    # give best_option to set_security_mechanisms function in order to set the appropriated mechanisms and their modes
+    # Client.set_security_mechanisms.set_security_mechanisms(best_option)
 
 
 class ConnectionTCPHandler(socketserver.StreamRequestHandler):
@@ -260,8 +259,6 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
                         process_message_keystore_information(received_data_dict)
                     case 'security_mechanisms_information':
                         process_message_security_mechanisms_information(received_data_dict)
-                    case 'security_mechanisms_filter':
-                        process_message_security_mechanisms_filter(received_data_dict)
                     case _:
                         frame_info = getframeinfo(currentframe())
                         print("""\n[ERROR] in""", frame_info.filename, "in line", frame_info.lineno,
