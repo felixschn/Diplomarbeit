@@ -5,15 +5,6 @@ from inspect import getframeinfo, currentframe
 import Client.Data_Engine.context_information_database as context_information_database
 import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_calculation_standard as weight_standard
 
-# high weight means   option for more security features
-# low weight means    not enough power or threads for sec features
-
-# every calculation should return values between 0 and 1 times weight
-
-
-# test data
-# context_information_dictionary = {"identifier": 268, "battery_state": 50, "charging_station_distance": 500,
-#                                  "location": 41, "elicitation_date": "2022-12-13T19:47:40.996571"}
 max_weight = 0
 high_level_context_information_list = []
 
@@ -30,7 +21,6 @@ def evaluate_weight(context_information_dict) -> tuple[float, float]:
         # fetch all rows from database table and store them into keystore_list
         keystore_query = "SELECT * FROM context_information_keystore"
         keystore_list = db_cursor.execute(keystore_query).fetchall()
-
 
     except sqlite3.OperationalError:
         frame_info = getframeinfo(currentframe())
@@ -67,7 +57,6 @@ def evaluate_weight(context_information_dict) -> tuple[float, float]:
             imported_mod = import_module(f"Client.Reasoning_Engine.Context_Model.Weight_Calculation.{formatted_file_name}")
 
         except Exception as e:
-            # TODO monitor the behavior of the program because sometimes an error occurs (maybe the function can't import the module because the filter file gets overwritten by an update message)
             print(e)
             continue
 
