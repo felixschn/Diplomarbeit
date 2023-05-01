@@ -33,7 +33,7 @@ def reload_retrieved_modules(filename, module_path):
     reload(imported_mod)
 
 
-def process_message_weight_calculation_file(received_data, connection_handler):
+def process_incoming_message(received_data, connection_handler, module_storing_path, module_path) -> str:
     # check if received data is not empty
     if len(received_data) == 0:
         return
@@ -48,7 +48,7 @@ def process_message_weight_calculation_file(received_data, connection_handler):
     show_progress = tqdm.tqdm(range(size_of_file), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
 
     # write the received data to a file in the 'Weight_Calculation' directory
-    with open(f"D:\PyCharm Projects\Diplomarbeit\Client\Reasoning_Engine\Context_Model\Weight_Calculation\\{filename}", "wb") as received_file:
+    with open(module_storing_path + filename, "wb") as received_file:
         while True:
             read_data = connection_handler.request.recv(BUFFER_SIZE)
 
@@ -63,78 +63,30 @@ def process_message_weight_calculation_file(received_data, connection_handler):
             show_progress.update(len(read_data))
 
     # reloading the modules to process context information with the newest data
-    reload_retrieved_modules(filename, "Client.Reasoning_Engine.Context_Model.Weight_Calculation.")
+    reload_retrieved_modules(filename, module_path)
+
+    return filename
+
+
+def process_message_weight_calculation_file(received_data, connection_handler):
+    modul_storing_path = f"D:\PyCharm Projects\Diplomarbeit\Client\Reasoning_Engine\Context_Model\Weight_Calculation\\"
+    module_path = "Client.Reasoning_Engine.Context_Model.Weight_Calculation."
+    filename = process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
 
     # update the database with a filter name from the added filter file
     context_information_database.update_weight_calculation_files(filename)
 
 
 def process_message_security_mechanism_file(received_data, connection_handler):
-    # check if the received data is not empty
-    if len(received_data) == 0:
-        return
-
-    print(f"Empfangen: {received_data}\n")
-
-    # store the received data in variables
-    _, filename, size_of_file, file_content = received_data.split(DELIMITER)
-
-    filename = os.path.basename(filename)
-    size_of_file = int(size_of_file)
-    show_progress = tqdm.tqdm(range(size_of_file), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
-
-    # write the received data to a file in the 'Security_Mechanisms' directory
-    with open(f"D:\PyCharm Projects\Diplomarbeit\Client\Security_Mechanisms\\{filename}", "wb") as received_file:
-        while True:
-            read_data = connection_handler.request.recv(BUFFER_SIZE)
-
-            # break out of the loop if no further data is received
-            if not read_data:
-                print("---- Received read_data was empty ----")
-                break
-
-            # write the retrieved data to the file
-            received_file.write(read_data)
-            # update the process bar
-            show_progress.update(len(read_data))
-
-    # reloading the modules to process context information with the newest data
-    reload_retrieved_modules(filename, "Client.Security_Mechanisms.")
-
-    # update the database with a filter name from the added filter file
-    context_information_database.update_security_mechanisms_file(filename)
+    modul_storing_path = f"D:\PyCharm Projects\Diplomarbeit\Client\Security_Mechanisms\\"
+    module_path = "Client.Security_Mechanisms."
+    filename = process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
 
 
 def process_message_filter_file(received_data, connection_handler):
-    # check if the received data is not empty
-    if len(received_data) == 0:
-        return
-
-    print(f"Empfangen: {received_data}\n")
-
-    # store the received data in various variables
-    _, filename, size_of_file, file_content = received_data.split(DELIMITER)
-    filename = os.path.basename(filename)
-    size_of_file = int(size_of_file)
-    show_progress = tqdm.tqdm(range(size_of_file), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
-
-    # write the received data to a file in the 'Filter' directory
-    with open(f"D:\PyCharm Projects\Diplomarbeit\Client\Reasoning_Engine\Filter\\{filename}", "wb") as received_file:
-        while True:
-            read_data = connection_handler.request.recv(BUFFER_SIZE)
-
-            # break out of the loop if no further data is received
-            if not read_data:
-                print("---- Received read_data was empty ----")
-                break
-
-            # write the retrieved data to the file
-            received_file.write(read_data)
-            # update the process bar
-            show_progress.update(len(read_data))
-
-    # reloading the modules to process context information with the newest data
-    reload_retrieved_modules(filename, "Client.Reasoning_Engine.Filter.")
+    modul_storing_path = f"D:\PyCharm Projects\Diplomarbeit\Client\Reasoning_Engine\Filter\\"
+    module_path = "Client.Reasoning_Engine.Filter."
+    filename = process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
 
     # update the database with a filter name from the added filter file
     context_information_database.update_security_mechanisms_filter(filename)
