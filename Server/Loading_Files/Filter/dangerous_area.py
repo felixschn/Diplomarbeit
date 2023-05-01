@@ -8,6 +8,7 @@ def execute_filter(available_security_mechanisms_list, evaluation_dict) -> list:
         if current_latitude <= dangerous_area_corner_2[0]:
             if dangerous_area_corner_2[1] <= current_longitude:
                 if current_longitude <= dangerous_area_corner_1[1]:
+                    print(f"Dangerous Area Filter activated: ", necessary_modes)
                     return necessary_modes
 
     return []
