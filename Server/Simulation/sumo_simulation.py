@@ -10,6 +10,7 @@ battery_consumption_buffer = collections.deque(maxlen=100)
 
 
 def simulation_data(sock):
+    print("Thread 6")
     if "SUMO_HOME" in os.environ:
         tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
         sys.path.append(tools)
@@ -84,7 +85,7 @@ def simulation_data(sock):
             time_format = '%Y-%m-%dT%H:%M:%S.%f'
             context_information = {'battery_state': battery_state_percentage, 'battery_consumption': battery_consumption_average,
                                    'trip_distance': trip_distance / 1000,
-                                   'location': (lat,long), 'elicitation_date': datetime.now().strftime(time_format), 'message_type': 'context_information'}
+                                   'location': (lat,long), 'follower': following_car_distance[1], 'elicitation_date': datetime.now().strftime(time_format), 'message_type': 'context_information'}
             sock.send(bytes(json.dumps(context_information), encoding='utf-8'))
             print(json.dumps(context_information))
 
