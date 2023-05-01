@@ -124,9 +124,9 @@ def get_best_affordable_combination(combination_weight_limit, necessary_modes):
 
     # create a query to retrieve the security mechanism combination with the highest value and lowest weight depending on several conditions like weight or
     # necessary modes
-    combination_query = 'SELECT * from ('
-    combination_query_max_value = 'SELECT * from security_mechanisms_combination WHERE value = (SELECT MAX(value) from security_mechanisms_combination WHERE weight <= ?'
-    combination_query_min_value = 'WHERE weight = (SELECT MIN(weight) from ('
+    combination_query = "SELECT * from ("
+    combination_query_max_value = "SELECT * from security_mechanisms_combination WHERE value = (SELECT MAX(value) from security_mechanisms_combination WHERE weight <= ?"
+    combination_query_min_value = "WHERE weight = (SELECT MIN(weight) from ("
 
     # add the necessary modes to the combination_query_max_value
     for mode in necessary_modes:
@@ -136,16 +136,25 @@ def get_best_affordable_combination(combination_weight_limit, necessary_modes):
         # append mode name and number to the query
         combination_query_max_value += f" AND {mode_name} >= {mode_number}"
     # add a closing bracket to the combination_query
-    combination_query_max_value += '))'
+    combination_query_max_value += ")"
+
+    for mode in necessary_modes:
+        mode_name = "".join((re.findall(r"[a-zA-Z]+", mode)))
+        mode_number = "".join((re.findall(r"\d+", mode)))
+        combination_query_max_value += f" AND {mode_name} >= {mode_number}"
+    combination_query_max_value += ")"
+
     # merge all the sub queries
-    combination_query += combination_query_max_value + ' ' + combination_query_min_value + combination_query_max_value + ')'
+    combination_query += combination_query_max_value + " " + combination_query_min_value + combination_query_max_value + ")"
 
     affordable_combinations = db_cursor.execute(combination_query, (combination_weight_limit, combination_weight_limit)).fetchall()
 
     # check if affordable_combinations is empty
     if not affordable_combinations:
+        print(f"No affordable combinations concerning the filters are available; proceeding with alternative combinations")
         # query to find the combination with the highest value and lowest weight without considering necessary modes because there was no affordable
         # option when considering all necessary modes
+        # TODO check if same logic as query above especiall after altering the combination_weight_limit value in reasoning.py (jetzt abgerundet statt aufgerundet)
         alternative_combination_query = """SELECT * from (SELECT * from security_mechanisms_combination WHERE value = 
                                         (SELECT MAX(value) from security_mechanisms_combination WHERE weight <= ?)) WHERE weight = 
                                         (SELECT MIN(weight) from (SELECT * from security_mechanisms_combination WHERE value = 
@@ -246,11 +255,6 @@ def create_security_mechanism_combinations():
         db_cursor.execute(insert_query_string, insert_deque)
     db_connection.commit()
 
-    # TODO store in database: combination: list_element; weight = sum_weights; value = sum_values; --> all mechanisms from list_element with only the integer
-
-    # sort dict after values to get an order of the security mechanism combination costs
-    # combination_cost = dict(sorted(combination_cost.items(), key=lambda item: item[1]))
-
 
 def update_weight_calculation_files(filename):
     db_cursor = get_cursor()
@@ -275,6 +279,7 @@ def update_weight_calculation_files(filename):
     db_connection.commit()
     return
 
+
 def update_security_mechanisms_filter(filename):
     db_cursor = get_cursor()
 
@@ -286,10 +291,6 @@ def update_security_mechanisms_filter(filename):
         pass
 
     elif filename in [elem[0] for elem in current_columns]:
-        update_query = """UPDATE security_mechanisms_filter SET filter_name = ?"""
-        query_params = filename
-        db_cursor.execute(update_query, (query_params,))
-        db_connection.commit()
         return
 
     insert_filter_query = """INSERT INTO security_mechanisms_filter (filter_name) VALUES (?)"""
@@ -304,11 +305,12 @@ def update_context_information_keystore(keystore_update_message):
     db_cursor = get_cursor()
 
     # create db table if not already present
-    create_keystore_query = """CREATE TABLE if not exists context_information_keystore(keyname,minimum_value, maximum_value,desirable_value,weight,separatorlist)"""
+    create_keystore_query = """CREATE TABLE if not exists context_information_keystore(keyname,minimum_value, maximum_value,desirable_value,weight)"""
     db_cursor.execute(create_keystore_query)
 
     # fetch all table entries to prevent keystore attribute duplicates
     current_columns = db_cursor.execute("SELECT keyname FROM context_information_keystore").fetchall()
+    # TODO maybe change if structure because pass looks like bad practice
     if len(current_columns) == 0:
         pass
 
@@ -318,19 +320,19 @@ def update_context_information_keystore(keystore_update_message):
                         minimum_value = ?,
                         maximum_value = ?,
                         desirable_value = ?,
-                        weight = ?,
-                        separatorlist = ? WHERE keyname = ?"""
+                        weight = ?
+                        WHERE keyname = ?"""
 
-        query_params = list(keystore_update_message.values())[2:7]
+        query_params = list(keystore_update_message.values())[2:6]
         query_params.append('battery_consumption')
         db_cursor.execute(update_query, query_params)
         db_connection.commit()
         return
 
-    insert_keystore_query = """INSERT INTO context_information_keystore(keyname,minimum_value,maximum_value,desirable_value,weight,separatorlist) 
-                        VALUES (?,?,?,?,?,?)"""
+    insert_keystore_query = """INSERT INTO context_information_keystore(keyname,minimum_value,maximum_value,desirable_value,weight) 
+                        VALUES (?,?,?,?,?)"""
 
-    db_cursor.execute(insert_keystore_query, list(keystore_update_message.values())[1:7])
+    db_cursor.execute(insert_keystore_query, list(keystore_update_message.values())[1:6])
     db_connection.commit()
 
 
@@ -347,7 +349,7 @@ def update_context_information(context_information_message):
         try:
             db_cursor.execute("ALTER TABLE received_context_information ADD COLUMN '%s'" % item)
         except sqlite3.OperationalError:
-            # print("table column",item,"already exist")
+            # as for each already-existing column, the except method would trigger an error message and, therefore, pollute the console output; pass is used
             pass
 
     # create adaptive query with respect to the total amount of keys in context_information_values dict
