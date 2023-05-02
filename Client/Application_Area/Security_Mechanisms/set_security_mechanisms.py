@@ -6,7 +6,7 @@ from os.path import isfile, join
 
 def set_security_mechanisms(best_option):
     try:
-        security_mechanisms_path = "Security_Mechanisms"
+        security_mechanisms_path = ""
         list_security_mechanism_files = [file for file in listdir(security_mechanisms_path) if isfile(join(security_mechanisms_path, file))]
 
     except FileNotFoundError:
