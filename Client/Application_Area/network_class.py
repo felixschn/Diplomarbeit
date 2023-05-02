@@ -1,6 +1,5 @@
 import json
 import os
-import random
 import socketserver
 from datetime import datetime, timedelta
 from importlib import reload, import_module
@@ -10,7 +9,7 @@ import tqdm
 
 import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weights
 import Client.Reasoning_Engine.Context_Model.reasoning
-import Client.set_security_mechanisms
+import Client.Application_Area.Security_Mechanisms.set_security_mechanisms
 from Client.Data_Engine import context_information_database
 
 HOST = "localhost"
@@ -19,7 +18,7 @@ DELIMITER = "<delimiter>"
 
 # the range of possible port numbers must be n-1 with respect to the for loop in the function called connection to server in main.py, or else the server will
 # listen to a port that has never been called from the client
-PORT = random.randint(64999, 64999)
+PORT = 65000
 time_format = '%Y-%m-%dT%H:%M:%S.%f'
 
 
@@ -38,7 +37,7 @@ def process_incoming_message(received_data, connection_handler, module_storing_p
     if len(received_data) == 0:
         return
 
-    print(f"Empfangen: {received_data}\n")
+    # print(f"Empfangen: {received_data}\n")
 
     # store the received data in variables
     _, filename, size_of_file, file_content = received_data.split(DELIMITER)
@@ -54,7 +53,7 @@ def process_incoming_message(received_data, connection_handler, module_storing_p
 
             # break out of the loop if no further data is received
             if not read_data:
-                print("---- Received read_data was empty ----")
+                #print("---- Received read_data was empty ----")
                 break
 
             # write the retrieved data to the file
@@ -78,8 +77,8 @@ def process_message_weight_calculation_file(received_data, connection_handler):
 
 
 def process_message_security_mechanism_file(received_data, connection_handler):
-    modul_storing_path = f"D:\PyCharm Projects\Diplomarbeit\Client\Security_Mechanisms\\"
-    module_path = "Client.Security_Mechanisms."
+    modul_storing_path = f"D:\PyCharm Projects\Diplomarbeit\Client\Application_Area\Security_Mechanisms\\"
+    module_path = "Client.Application_Area.Security_Mechanisms."
     filename = process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
 
 
@@ -172,14 +171,14 @@ def process_message_context_information(received_data_dict):
 
 class ConnectionTCPHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
-        print(f'Connected: {self.client_address[0]}:{self.client_address[1]}\n')
+        print(f'\nConnected: {self.client_address[0]}:{self.client_address[1]}')
         while True:
             try:
                 self.data = self.request.recv(1024).strip()
                 received_time = datetime.now()
                 if not self.data.decode():
-                    print("----Received message was empty----")
-                    print("----Waiting for new message----")
+                    # print("----Received message was empty----")
+                    # print("----Waiting for new message----")
                     break
             except:
                 print("----Lost connection to client----")
@@ -199,6 +198,7 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
 
             if "weight_calculation_file" in self.data.decode():
                 process_message_weight_calculation_file(self.data.decode(), self)
+                continue
 
             # create a dict out of the received data and forward the data to designated methods to process the data for context evaluation
             try:
