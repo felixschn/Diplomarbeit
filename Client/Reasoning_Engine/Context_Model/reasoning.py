@@ -7,7 +7,6 @@ import Client.Data_Engine.context_information_database as context_information_da
 
 def apply_filters(context_information_dict) -> list:
     necessary_modes_list = []
-    available_security_mechanisms_list = context_information_database.get_security_mechanisms_information_name()
 
     try:
         # better to access information through the database instead of iterating through the filter directory, which prevents the execution of unknown (
@@ -36,11 +35,12 @@ def apply_filters(context_information_dict) -> list:
         # try to import 'execute_filter' function from filter_file
         try:
             call_filter = getattr(imported_mod, 'execute_filter')
-            # merge the returned list of the filter files to the necessary_modes_list
-            necessary_modes_list.extend(call_filter(available_security_mechanisms_list, context_information_dict))
+
+            # calling filter function and extend necessary_modes_list with the filter result
+            necessary_modes_list.extend(call_filter(context_information_dict))
 
         except:
-            print("""some of the files in the Filter directory aren't usable filters""")
+            print("Some of the files in the Filter directory aren't usable filters.")
             continue
 
     # return a list that contains no duplicates

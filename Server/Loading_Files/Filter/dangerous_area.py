@@ -1,4 +1,4 @@
-def execute_filter(available_security_mechanisms_list, evaluation_dict) -> list:
+def execute_filter(evaluation_dict) -> list:
     necessary_modes = ["vpn1"]
     dangerous_area_corner_1 = (51.037275, 13.769544)
     dangerous_area_corner_2 = (51.043342, 13.747986)
