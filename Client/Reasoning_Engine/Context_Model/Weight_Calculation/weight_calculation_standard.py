@@ -1,11 +1,11 @@
 import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weights as weight_file
 def calculation(received_message_value, minimum_value, maximum_value, desirable_value, weight) -> float:
-    # normalizing data because of different values (due to units e.g. 1000km weight_calculation_distance vs 75% battery)
     # only to see if the received_message_value is more on the left or on the right of the scale
-    middle = (maximum_value - minimum_value) / 2
-    if desirable_value > middle:
+    mean_value = (maximum_value - minimum_value) / 2
+    if desirable_value > mean_value:
         if received_message_value >= desirable_value:
             return weight
+        # normalizing data because of different value units
         normalized = (received_message_value - minimum_value) / (desirable_value - minimum_value)
         return normalized * weight
     else:

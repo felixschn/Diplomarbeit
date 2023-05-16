@@ -47,13 +47,12 @@ def apply_filters(context_information_dict) -> list:
     return list(set(necessary_modes_list))
 
 
-def calculate_best_combination(weight, max_weight, context_information_dict):
-    # call filter files to retrieve necessary security mechanism modes depending on the context information
+def calculate_best_combination(calculated_weight, max_weight, context_information_dict):
+    # apply filters to retrieve necessary security mechanism modes
     necessary_modes = apply_filters(context_information_dict)
 
     # calculate the weight limit for combinations to choose
-    # TODO check if floor (abrunden) is better then ceil (aufrunden)
-    combination_weight_limit = math.floor(weight / max_weight * context_information_database.get_max_weight_combination())
+    combination_weight_limit = math.floor(calculated_weight / max_weight * context_information_database.get_max_weight_combination())
     print("combination_weight_limit: ", combination_weight_limit)
 
     # query the database for the best affordable combinations (best means the highest value and lowest weight)

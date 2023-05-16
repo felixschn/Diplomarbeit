@@ -7,9 +7,9 @@ from inspect import getframeinfo, currentframe
 
 import tqdm
 
+import Client.Application_Area.Security_Mechanisms.set_security_mechanisms
 import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weights
 import Client.Reasoning_Engine.Context_Model.reasoning
-import Client.Application_Area.Security_Mechanisms.set_security_mechanisms
 from Client.Data_Engine import context_information_database
 
 HOST = "localhost"
@@ -112,7 +112,7 @@ def process_message_security_mechanisms_information(received_data_dict):
 
 
 def process_message_context_information(received_data_dict):
-    global weight, max_weight
+    global calculated_weight, max_weight
     db_table_name = 'received_context_information'
 
     try:
@@ -137,9 +137,9 @@ def process_message_context_information(received_data_dict):
     #     print("timestamp error while comparing the latest database entry with received context information")
 
     try:
-        weight, max_weight = Client.Reasoning_Engine.Context_Model.Weight_Calculation.weights.evaluate_weight(received_data_dict)
-        received_data_dict['weight'] = weight
-        print("calculated weight: ", weight)
+        calculated_weight, max_weight = Client.Reasoning_Engine.Context_Model.Weight_Calculation.weights.evaluate_weight(received_data_dict)
+        received_data_dict['weight'] = calculated_weight
+        print("calculated weight: ", calculated_weight)
 
     except TypeError:
         frame_info = getframeinfo(currentframe())
@@ -148,7 +148,7 @@ def process_message_context_information(received_data_dict):
         return
 
     try:
-        best_option = Client.Reasoning_Engine.Context_Model.reasoning.calculate_best_combination(weight, max_weight, received_data_dict)
+        best_option = Client.Reasoning_Engine.Context_Model.reasoning.calculate_best_combination(calculated_weight, max_weight, received_data_dict)
         print(best_option, "\n")
         received_data_dict['best_option'] = str(best_option)
 
