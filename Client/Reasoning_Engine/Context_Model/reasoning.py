@@ -27,7 +27,7 @@ def apply_filters(context_information_dict) -> list:
             # import the filter_file from Filter directory
             imported_mod = import_module(f"Client.Reasoning_Engine.Filter.{formatted_file_name}")
 
-        except Exception as e:
+        except:
             frame_info = getframeinfo(currentframe())
             print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
                   "could not import filter: ", formatted_file_name)
