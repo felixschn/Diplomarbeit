@@ -24,10 +24,10 @@ def evaluate_weight(context_information_dict) -> tuple[float, float]:
 
     except sqlite3.OperationalError:
         frame_info = getframeinfo(currentframe())
-        print("""\n[ERROR]: in """, frame_info.filename, "in line:", frame_info.lineno, """Database does not contain keystore table;\ncontext information cannot be processed without keystore information;\n
+        print("\n[ERROR]: in ", frame_info.filename, "in line:", frame_info.lineno, """Database does not contain keystore table;\ncontext information cannot be processed without keystore information;\n
             waiting for keystore update message\n""")
         # TODO check if this return received_message_value is correct
-        return (None, None)
+        return
 
     keystore_dict = {}
     for i in keystore_list:
@@ -44,27 +44,32 @@ def evaluate_weight(context_information_dict) -> tuple[float, float]:
 
     except sqlite3.OperationalError:
         frame_info = getframeinfo(currentframe())
-        print("""\n[ERROR]: in """, frame_info.filename, "in line:", frame_info.lineno,
-              """Database does not contain weight calulation files;\nStandard weight calculation will be used;\n""")
+        print("\n[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+              "Database does not contain weight calulation files;\nStandard weight calculation will be used;\n")
+
         calculated_weight += weight_standard.weight_standard(evaluation_dict, keystore_dict)
         return calculated_weight, max_weight
 
     for weight_calculation_file in weight_files_list:
         formatted_file_name = weight_calculation_file[0].replace('.py', '')
 
-        # try to import the filter_file from Filter directory
         try:
+            # import the filter_file from Filter directory
             imported_mod = import_module(f"Client.Reasoning_Engine.Context_Model.Weight_Calculation.{formatted_file_name}")
 
-        except Exception as e:
-            print(e)
+        except Exception:
+            frame_info = getframeinfo(currentframe())
+            print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+                  "could not import weight calculation file: ", formatted_file_name)
             continue
 
-        # try to import 'execute_filter' function from filter_file
         try:
-            call_weight_calculation = getattr(imported_mod, 'weight_calculation_distance')
+            # import 'execute_filter' function from filter_file
+            call_weight_calculation = getattr(imported_mod, 'weight_calculation')
+
             # merge the returned list of the filter files to the necessary_modes_list
             calculated_weight += (call_weight_calculation(evaluation_dict))
+
         except:
             print("""some of the files in the Filter directory aren't usable filters""")
             continue

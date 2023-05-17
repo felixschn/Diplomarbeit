@@ -2,7 +2,7 @@ import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_calculati
 import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weights as weight_file
 
 
-def weight_calculation_distance(evaluation_dict) -> float:
+def weight_calculation(evaluation_dict) -> float:
     # battery_state                                                   in   %
     # distance                                                        in   km
     # battery consumption                                             in kWh / 100km
