@@ -13,7 +13,7 @@ db_connection: sqlite3.dbapi2 = None
 def get_cursor():
     global db_connection
     if db_connection is None:
-        db_name = 'D:\PyCharm Projects\Diplomarbeit\Client\Data_Engine\context_information_database.sqlite'
+        db_name = 'D:\PyCharm Projects\Diplomarbeit\Client\Data_Engine\system_database.sqlite'
 
         # https://stackoverflow.com/questions/12932607/how-to-check-if-a-sqlite3-database-exists-in-python
         # read, write, create database at given path
@@ -147,6 +147,7 @@ def get_best_affordable_combination(combination_weight_limit, necessary_modes):
     # merge all the sub queries
     combination_query += combination_query_max_value + " " + combination_query_min_value + combination_query_max_value + ")"
 
+    # store database query result to affordable_combination
     affordable_combinations = db_cursor.execute(combination_query, (combination_weight_limit, combination_weight_limit)).fetchall()
 
     # check if affordable_combinations is empty
@@ -315,7 +316,7 @@ def update_context_information_keystore(keystore_update_message):
         pass
 
     # check if keyname is in list, therefore get first elements in a list of tuples
-    elif keystore_update_message['keyname'] in [elem[0] for elem in current_columns]:
+    elif keystore_update_message["keyname"] in [elem[0] for elem in current_columns]:
         update_query = """UPDATE context_information_keystore SET 
                         minimum_value = ?,
                         maximum_value = ?,
@@ -323,8 +324,8 @@ def update_context_information_keystore(keystore_update_message):
                         weight = ?
                         WHERE keyname = ?"""
 
-        query_params = list(keystore_update_message.values())[2:6]
-        query_params.append('battery_consumption')
+        query_params = list(keystore_update_message.values())[1:5]
+        query_params.append(keystore_update_message["keyname"])
         db_cursor.execute(update_query, query_params)
         db_connection.commit()
         return
@@ -332,7 +333,7 @@ def update_context_information_keystore(keystore_update_message):
     insert_keystore_query = """INSERT INTO context_information_keystore(keyname,minimum_value,maximum_value,desirable_value,weight) 
                         VALUES (?,?,?,?,?)"""
 
-    db_cursor.execute(insert_keystore_query, list(keystore_update_message.values())[1:6])
+    db_cursor.execute(insert_keystore_query, list(keystore_update_message.values())[0:5])
     db_connection.commit()
 
 
