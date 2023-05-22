@@ -2,7 +2,7 @@ import sqlite3
 from importlib import import_module
 from inspect import getframeinfo, currentframe
 
-import Client.Data_Engine.context_information_database as context_information_database
+import Client.Data_Engine.database_connector as database_connector
 import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_calculation_standard as weight_standard
 
 max_weight = 0
@@ -12,7 +12,7 @@ high_level_context_information_list = []
 def evaluate_weight(context_information_dict) -> tuple[float, float]:
     # create database cursor
     global max_weight, high_level_context_information_list
-    db_cursor = context_information_database.get_cursor()
+    db_cursor = database_connector.get_cursor()
     calculated_weight = 0
     max_weight = 0
 

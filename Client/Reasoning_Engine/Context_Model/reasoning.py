@@ -2,7 +2,7 @@ import math
 from importlib import import_module
 from inspect import getframeinfo, currentframe
 
-import Client.Data_Engine.context_information_database as context_information_database
+import Client.Data_Engine.database_connector as database_connector
 
 
 def apply_filters(context_information_dict) -> list:
@@ -10,7 +10,7 @@ def apply_filters(context_information_dict) -> list:
 
     try:
         # get available filter names out of database
-        filter_list = context_information_database.get_security_mechanisms_filter()
+        filter_list = database_connector.get_security_mechanisms_filter()
 
     except:
         frame_info = getframeinfo(currentframe())
@@ -55,10 +55,10 @@ def calculate_best_combination(calculated_weight, max_weight, context_informatio
     necessary_modes = apply_filters(context_information_dict)
 
     # calculate the weight limit for combinations to choose
-    combination_weight_limit = math.floor(calculated_weight / max_weight * context_information_database.get_max_weight_combination())
+    combination_weight_limit = math.floor(calculated_weight / max_weight * database_connector.get_max_weight_combination())
     print("combination_weight_limit: ", combination_weight_limit)
 
     # query the database for the best affordable combinations (best means the highest value and lowest weight)
-    best_affordable_combination = context_information_database.get_best_affordable_combination(combination_weight_limit, necessary_modes)
+    best_affordable_combination = database_connector.get_best_affordable_combination(combination_weight_limit, necessary_modes)
 
     return best_affordable_combination
