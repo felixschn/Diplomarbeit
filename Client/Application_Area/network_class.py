@@ -127,7 +127,7 @@ def process_message_context_information(received_data_dict):
 
     # try:
     #     if datetime.strptime(received_data_dict['elicitation_date'], time_format) < datetime.strptime(
-    #             context_information_database.get_latest_date_entry(db_table_name), time_format):
+    #             database_connector.get_latest_date_entry(db_table_name), time_format):
     #         # TODO decide how to deal with received data which is older then the latest database entry --> save but not process or not even save?
     #         print("Received context information is older than the latest database entry")
     #         print("Context data will be ignored")
