@@ -10,7 +10,7 @@ import tqdm
 import Client.Application_Area.Security_Mechanisms.set_security_mechanisms
 import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weights
 import Client.Reasoning_Engine.Context_Model.reasoning
-from Client.Data_Engine import context_information_database
+from Client.Data_Engine import database_connector
 
 HOST = "localhost"
 BUFFER_SIZE = 4096
@@ -73,7 +73,7 @@ def process_message_weight_calculation_file(received_data, connection_handler):
     filename = process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
 
     # update the database with a filter name from the added filter file
-    context_information_database.update_weight_calculation_files(filename)
+    database_connector.update_weight_calculation_files(filename)
 
 
 def process_message_security_mechanism_file(received_data, connection_handler):
@@ -88,12 +88,12 @@ def process_message_filter_file(received_data, connection_handler):
     filename = process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
 
     # update the database with a filter name from the added filter file
-    context_information_database.update_security_mechanisms_filter(filename)
+    database_connector.update_security_mechanisms_filter(filename)
 
 
 def process_message_keystore_information(received_data_dict):
     # deserialization of the received byte string back to json format in order to create table columns from dictionary keys
-    context_information_database.update_context_information_keystore(received_data_dict)
+    database_connector.update_context_information_keystore(received_data_dict)
 
 
 def process_message_security_mechanisms_information(received_data_dict):
@@ -105,10 +105,10 @@ def process_message_security_mechanisms_information(received_data_dict):
         return
 
     # write retrieved information to the database
-    context_information_database.update_security_mechanisms_information(received_data_dict)
+    database_connector.update_security_mechanisms_information(received_data_dict)
 
     # call function to create new combinations, weights and values for the updated security mechanism information
-    context_information_database.create_security_mechanism_combinations()
+    database_connector.create_security_mechanism_combinations()
 
 
 def process_message_context_information(received_data_dict):
@@ -161,7 +161,7 @@ def process_message_context_information(received_data_dict):
     # convert location tuple with long and lat to string in order to save it in the database
     received_data_dict["location"] = str(received_data_dict["location"])
     # save context information with best option evaluation to the database
-    context_information_database.update_context_information(received_data_dict)
+    database_connector.update_context_information(received_data_dict)
 
     # check if the best_option tuple is not empty
     # if best_option:
