@@ -8,7 +8,7 @@ from inspect import getframeinfo, currentframe
 import tqdm
 
 import Client.Application_Area.Security_Mechanisms.set_security_mechanisms
-import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weights
+import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_evaluation
 import Client.Reasoning_Engine.Context_Model.reasoning
 from Client.Data_Engine import database_connector
 
@@ -67,13 +67,13 @@ def process_incoming_message(received_data, connection_handler, module_storing_p
     return filename
 
 
-def process_message_weight_calculation_file(received_data, connection_handler):
+def process_message_high_level_derivation_file(received_data, connection_handler):
     modul_storing_path = f"D:\PyCharm Projects\Diplomarbeit\Client\Reasoning_Engine\Context_Model\Weight_Calculation\\"
     module_path = "Client.Reasoning_Engine.Context_Model.Weight_Calculation."
     filename = process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
 
     # update the database with a filter name from the added filter file
-    database_connector.update_weight_calculation_files(filename)
+    database_connector.update_high_level_derivation_files(filename)
 
 
 def process_message_security_mechanism_file(received_data, connection_handler):
@@ -137,14 +137,14 @@ def process_message_context_information(received_data_dict):
     #     print("timestamp error while comparing the latest database entry with received context information")
 
     try:
-        calculated_weight, max_weight = Client.Reasoning_Engine.Context_Model.Weight_Calculation.weights.evaluate_weight(received_data_dict)
+        calculated_weight, max_weight = Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_evaluation.weight_evaluation(received_data_dict)
         received_data_dict['weight'] = calculated_weight
         print("calculated weight: ", calculated_weight)
 
-    except TypeError:
+    except:
         frame_info = getframeinfo(currentframe())
         print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
-              """weight calculation was not possible\n further message processing not possible""")
+              """weight calculation was not possible\nfurther message processing not possible""")
         return
 
     try:
@@ -196,8 +196,8 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
                 process_message_security_mechanism_file(self.data.decode(), self)
                 continue
 
-            if "weight_calculation_file" in self.data.decode():
-                process_message_weight_calculation_file(self.data.decode(), self)
+            if "high_level_derivation_file" in self.data.decode():
+                process_message_high_level_derivation_file(self.data.decode(), self)
                 continue
 
             # create a dict out of the received data and forward the data to designated methods to process the data for context evaluation
