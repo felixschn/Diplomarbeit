@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 class SecurityMechanismsInformation():
     mechanism_name: str
     modes: int
-    mode_weights: list
+    mode_costs: list
     mode_values: list
     message_type: str = field(default="security_mechanisms_information")
 
