@@ -1,10 +1,14 @@
 import os
 import time
+from pathlib import Path
+
 import tqdm
 import socket
 
-filename = "D:\PyCharm Projects\Diplomarbeit\Server\Loading_Files\Weight_Calculations\high_level_derivation_battery_surplus.py"
-size_of_file = os.path.getsize(f"{filename}")
+path_to_project = Path(__file__).parents[2]
+path_to_file = path_to_project.joinpath("Server\Loading_Files\Weight_Calculations\high_level_derivation_battery_surplus.py")
+size_of_file = os.path.getsize(f"{path_to_file}")
+filename = path_to_file.name
 DELIMITER = "<delimiter>"
 message_type = "high_level_derivation_file"
 BUFFER_SIZE = 4096
@@ -33,7 +37,7 @@ def send_high_level_derivation_file():
     sock.send(f"{message_type}{DELIMITER}{filename}{DELIMITER}{size_of_file}{DELIMITER}".encode())
     show_progress = tqdm.tqdm(range(size_of_file), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
     time.sleep(2)
-    with open(filename, "rb") as file:
+    with open(path_to_file, "rb") as file:
         while True:
             read_data = file.read(BUFFER_SIZE)
             if not read_data:
