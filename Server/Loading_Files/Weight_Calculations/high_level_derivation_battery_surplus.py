@@ -1,10 +1,10 @@
 from inspect import getframeinfo, currentframe
 
 import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_calculation_standard as weight_calculation_standard
-import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weights as weight_file
+import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_evaluation as weight_file
 
 
-def weight_calculation(evaluation_dict) -> float:
+def high_level_derivation(evaluation_dict) -> float:
     battery_surplus_attributes_list = ["battery_state", "battery_consumption", "trip_distance"]
 
     # define calculation-specific context information attributes for high-level context information derivation
@@ -26,7 +26,7 @@ def weight_calculation(evaluation_dict) -> float:
 
     # define Keystore parameters for high-level context information of battery surplus
     weight_battery_surplus = 15
-    weight_file.max_weight += weight_battery_surplus
+    weight_file.max_sum_of_weight += weight_battery_surplus
     max_reserve = 3
     min_reserve = 1
 
@@ -51,4 +51,4 @@ def weight_calculation(evaluation_dict) -> float:
     print("battery_surplus is good")
 
     # return battery_surplus with required Keystore Parameter
-    return weight_calculation_standard.calculation(battery_surplus, min_reserve, max_reserve, max_reserve, weight_battery_surplus)
+    return weight_calculation_standard.weight_calculation_normalised(battery_surplus, min_reserve, max_reserve, max_reserve, weight_battery_surplus)
