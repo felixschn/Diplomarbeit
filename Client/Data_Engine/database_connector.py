@@ -257,26 +257,26 @@ def create_security_mechanism_combinations():
     db_connection.commit()
 
 
-def update_weight_calculation_files(filename):
+def update_high_level_derivation_files(filename):
     db_cursor = get_cursor()
 
-    create_calculation_files_query = """CREATE TABLE if not exists weight_calculation_files(weight_calculation_name)"""
-    db_cursor.execute(create_calculation_files_query)
+    create_high_level_derivation_files_query = "CREATE TABLE if not exists high_level_derivation_files(high_level_name)"
+    db_cursor.execute(create_high_level_derivation_files_query)
 
-    current_columns = db_cursor.execute("SELECT weight_calculation_name FROM weight_calculation_files").fetchall()
+    current_columns = db_cursor.execute("SELECT high_level_name FROM high_level_derivation_files").fetchall()
     if len(current_columns) == 0:
         pass
 
     elif filename in [elem[0] for elem in current_columns]:
-        update_query = """UPDATE weight_calculation_files SET weight_calculation_name = ?"""
+        update_query = "UPDATE high_level_derivation_files SET high_level_name = ?"
         query_params = filename
         db_cursor.execute(update_query, (query_params,))
         db_connection.commit()
         return
 
-    insert_weight_calculation_query = """INSERT INTO weight_calculation_files(weight_calculation_name) VALUES (?)"""
+    insert_high_level_derivation_query = "INSERT INTO high_level_derivation_files(high_level_name) VALUES (?)"
     query_params = filename
-    db_cursor.execute(insert_weight_calculation_query, (query_params,))
+    db_cursor.execute(insert_high_level_derivation_query, (query_params,))
     db_connection.commit()
     return
 
