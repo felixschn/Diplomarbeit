@@ -8,7 +8,7 @@ from inspect import getframeinfo, currentframe
 import tqdm
 
 import Client.Application_Area.Security_Mechanisms.set_security_mechanisms
-import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_evaluation
+import Client.Reasoning_Engine.Context_Model.Weight_Calculation.asset_evaluation
 import Client.Reasoning_Engine.Context_Model.reasoning
 from Client.Data_Engine import database_connector
 
@@ -112,9 +112,6 @@ def process_message_security_mechanisms_information(received_data_dict):
 
 
 def process_message_context_information(received_data_dict):
-    global calculated_weight, max_weight
-    db_table_name = 'received_context_information'
-
     try:
         if datetime.strptime(received_data_dict['elicitation_date'], time_format) > datetime.now() + timedelta(minutes=0):
             print("""[ERROR]: date from received data is greater than system time; Context data will be ignored\n""")
@@ -137,18 +134,18 @@ def process_message_context_information(received_data_dict):
     #     print("timestamp error while comparing the latest database entry with received context information")
 
     try:
-        calculated_weight, max_weight = Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_evaluation.weight_evaluation(received_data_dict)
-        received_data_dict['weight'] = calculated_weight
-        print("calculated weight: ", calculated_weight)
+        calculated_asset, sum_of_max_asset = Client.Reasoning_Engine.Context_Model.Weight_Calculation.asset_evaluation.asset_evaluation(received_data_dict)
+        received_data_dict['asset'] = calculated_asset
+        print("calculated asset: ", calculated_asset)
 
     except:
         frame_info = getframeinfo(currentframe())
         print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
-              """weight calculation was not possible\nfurther message processing not possible""")
+              """asset calculation was not possible\nfurther message processing not possible""")
         return
 
     try:
-        best_option = Client.Reasoning_Engine.Context_Model.reasoning.calculate_best_combination(calculated_weight, max_weight, received_data_dict)
+        best_option = Client.Reasoning_Engine.Context_Model.reasoning.calculate_best_combination(calculated_asset, sum_of_max_asset, received_data_dict)
         print(best_option, "\n")
         received_data_dict['best_option'] = str(best_option)
 
