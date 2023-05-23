@@ -3,7 +3,7 @@ from importlib import import_module
 from inspect import getframeinfo, currentframe
 
 import Client.Data_Engine.database_connector as database_connector
-import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_calculation_standard as weight_standard
+import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_calculation_standard as weight_calculation_standard
 
 max_weight = 0
 high_level_context_information_list = []
@@ -45,9 +45,9 @@ def evaluate_weight(context_information_dict) -> tuple[float, float]:
     except sqlite3.OperationalError:
         frame_info = getframeinfo(currentframe())
         print("\n[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
-              "Database does not contain weight calulation files;\nStandard weight calculation will be used;\n")
+              "Database does not contain weight calculation files;\nStandard weight calculation will be used;\n")
 
-        calculated_weight += weight_standard.weight_standard(evaluation_dict, keystore_dict)
+        calculated_weight += weight_calculation_standard.weight_calculation_standard(evaluation_dict, keystore_dict)
         return calculated_weight, max_weight
 
     for weight_calculation_file in weight_files_list:
@@ -74,6 +74,6 @@ def evaluate_weight(context_information_dict) -> tuple[float, float]:
             print("""some of the files in the Filter directory aren't usable filters""")
             continue
 
-    calculated_weight += weight_standard.weight_standard(evaluation_dict, keystore_dict)
+    calculated_weight += weight_calculation_standard.weight_calculation_standard(evaluation_dict, keystore_dict)
 
     return calculated_weight, max_weight

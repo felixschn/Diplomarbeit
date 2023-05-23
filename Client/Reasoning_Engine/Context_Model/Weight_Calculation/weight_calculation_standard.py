@@ -22,7 +22,7 @@ def weight_calculation_normalised(received_message_value, minimum_value, maximum
         return (1 - normalized) * weight
 
 
-def weight_standard(evaluation_dict, keystore_dict) -> float:
+def weight_calculation_standard(evaluation_dict, keystore_dict) -> float:
     weight_sum = 0
 
     for key in evaluation_dict:
