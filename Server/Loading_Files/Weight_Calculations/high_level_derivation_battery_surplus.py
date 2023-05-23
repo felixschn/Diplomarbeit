@@ -1,7 +1,7 @@
 from inspect import getframeinfo, currentframe
 
-import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_calculation_standard as weight_calculation_standard
-import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_evaluation as weight_file
+import Client.Reasoning_Engine.Context_Model.Weight_Calculation.asset_calculation_standard as weight_calculation_standard
+import Client.Reasoning_Engine.Context_Model.Weight_Calculation.asset_evaluation as weight_file
 
 
 def high_level_derivation(evaluation_dict) -> float:
@@ -26,9 +26,9 @@ def high_level_derivation(evaluation_dict) -> float:
 
     # define Keystore parameters for high-level context information of battery surplus
     weight_battery_surplus = 15
-    weight_file.max_sum_of_weight += weight_battery_surplus
-    max_reserve = 3
-    min_reserve = 1
+    weight_file.max_sum_of_asset += weight_battery_surplus
+    max_surplus = 2
+    min_surplus = 0
 
     range = battery_state / battery_consumption * 100  # estimated range with current consumption
     battery_surplus = range / trip_distance - 1
@@ -45,10 +45,10 @@ def high_level_derivation(evaluation_dict) -> float:
         # half weight because the small battery_surplus is still critical
         return battery_surplus * weight_battery_surplus * 0.5
 
-    if battery_surplus > max_reserve:
+    if battery_surplus > max_surplus:
         return weight_battery_surplus
 
     print("battery_surplus is good")
 
     # return battery_surplus with required Keystore Parameter
-    return weight_calculation_standard.weight_calculation_normalised(battery_surplus, min_reserve, max_reserve, max_reserve, weight_battery_surplus)
+    return weight_calculation_standard.asset_calculation(battery_surplus, min_surplus, max_surplus, max_surplus, weight_battery_surplus)
