@@ -48,18 +48,20 @@ def apply_filters(context_information_dict) -> list:
     return list(set(necessary_modes_list))
 
 
-def calculate_best_combination(calculated_weight, max_weight, context_information_dict):
+def calculate_best_combination(calculated_asset, sum_of_max_asset, received_information):
     # apply filters to retrieve necessary security mechanism modes
-    necessary_modes = apply_filters(context_information_dict)
+    necessary_modes = apply_filters(received_information)
 
     # retrieve the heaviest weight value from the combination from the database
-    max_weight_combination = database_connector.get_max_weight_combination()
+    max_combination_cost = database_connector.get_max_combination_cost()
 
-    # calculate the weight limit for combinations to choose
-    combination_weight_limit = math.floor(calculated_weight / max_weight * max_weight_combination)
-    print("combination_weight_limit: ", combination_weight_limit,"out of ", max_weight_combination)
+    # calculate the cost limit for combinations to choose
+    # weil abstrakte Gewichte und Kosten genommen --> Ermitteltes asset geteilt durch gesamt mägliche asset gibt Verhältnis an, wie viel du dir leisten kannst --> * max = in diesem verhältnis auch zum max cost damit ich die kosten bekommen, die ich mir maximal leisten kann
+    # im idealfall kannst du dir teuerestes Paket leisten und im Idealfall wäre das errechnete Asset gleich dem max Asset --> wenn das nicht der Fall, muss das Verhältnis berechnet werden (siehe oben)
+    combination_cost_limit = math.floor(calculated_asset / sum_of_max_asset * max_combination_cost)
+    print("combination_cost_limit: ", combination_cost_limit,"out of ", max_combination_cost)
 
     # query the database for the best affordable combinations (best means the highest value and lowest weight)
-    best_affordable_combination = database_connector.get_best_affordable_combination(combination_weight_limit, necessary_modes)
+    best_affordable_combination = database_connector.get_best_affordable_combination(combination_cost_limit, necessary_modes)
 
     return best_affordable_combination
