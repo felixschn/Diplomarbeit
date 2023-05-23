@@ -34,10 +34,8 @@ def apply_filters(context_information_dict) -> list:
             continue
 
         try:
-            # import 'execute_filter' function from filter_file
+            # loading and calling 'execute_filter' function from filter_file
             call_filter = getattr(imported_mod, 'execute_filter')
-
-            # calling filter function and extend necessary_modes_list with the filter result
             necessary_modes_list.extend(call_filter(context_information_dict))
 
         except:
