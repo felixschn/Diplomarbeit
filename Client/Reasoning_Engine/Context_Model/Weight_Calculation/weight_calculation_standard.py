@@ -1,4 +1,4 @@
-import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weights as weight_file
+import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_evaluation as weight_file
 
 
 def weight_calculation_normalised(received_message_value, minimum_value, maximum_value, desirable_value, weight) -> float:
@@ -36,6 +36,6 @@ def weight_calculation_standard(evaluation_dict, keystore_dict) -> float:
         context_information_weight = keystore_dict[key][3]
 
         weight_sum += weight_calculation_normalised(evaluation_dict[key], minimum_value, maximum_value, desirable_value, context_information_weight)
-        weight_file.max_weight += context_information_weight
+        weight_file.max_sum_of_weight += context_information_weight
 
     return weight_sum
