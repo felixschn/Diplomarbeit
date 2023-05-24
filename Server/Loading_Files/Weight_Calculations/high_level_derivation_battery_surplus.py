@@ -1,7 +1,7 @@
 from inspect import getframeinfo, currentframe
 
-import Client.Reasoning_Engine.Context_Model.Weight_Calculation.asset_calculation_standard as weight_calculation_standard
-import Client.Reasoning_Engine.Context_Model.Weight_Calculation.asset_evaluation as weight_file
+import Client.Reasoning_Engine.Context_Model.Rule_Set.asset_calculation_standard as weight_calculation_standard
+import Client.Reasoning_Engine.Context_Model.Rule_Set.asset_evaluation as weight_file
 
 
 def high_level_derivation(evaluation_dict) -> float:
