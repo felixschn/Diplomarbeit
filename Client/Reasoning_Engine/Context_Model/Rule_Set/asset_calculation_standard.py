@@ -1,7 +1,7 @@
-import Client.Reasoning_Engine.Context_Model.Weight_Calculation.weight_evaluation as weight_file
+import Client.Reasoning_Engine.Context_Model.Rule_Set.asset_evaluation as asset_evaluation
 
 
-def weight_calculation_normalised(received_message_value, minimum_value, maximum_value, desirable_value, weight) -> float:
+def asset_calculation(received_message_value, minimum_value, maximum_value, desirable_value, weight) -> float:
     # calculate mean to check if the desirable_value inclines to the left or on the right of the scale
     mean_value = (maximum_value - minimum_value) / 2
 
@@ -22,11 +22,11 @@ def weight_calculation_normalised(received_message_value, minimum_value, maximum
         return (1 - normalized) * weight
 
 
-def weight_calculation_standard(evaluation_dict, keystore_dict) -> float:
-    weight_sum = 0
+def asset_calculation_standard(evaluation_dict, keystore_dict) -> float:
+    asset_sum = 0
 
     for key in evaluation_dict:
-        if key in weight_file.high_level_context_information_list:
+        if key in asset_evaluation.high_level_context_information_list:
             continue
 
         # extract Keystore parameters for each key
@@ -35,7 +35,7 @@ def weight_calculation_standard(evaluation_dict, keystore_dict) -> float:
         desirable_value = keystore_dict[key][2]
         context_information_weight = keystore_dict[key][3]
 
-        weight_sum += weight_calculation_normalised(evaluation_dict[key], minimum_value, maximum_value, desirable_value, context_information_weight)
-        weight_file.max_sum_of_weight += context_information_weight
+        asset_sum += asset_calculation(evaluation_dict[key], minimum_value, maximum_value, desirable_value, context_information_weight)
+        asset_evaluation.max_sum_of_asset += context_information_weight
 
-    return weight_sum
+    return asset_sum
