@@ -1,5 +1,4 @@
 import json
-import os
 import socketserver
 from datetime import datetime, timedelta
 from importlib import reload, import_module
@@ -55,7 +54,7 @@ def process_incoming_message(received_data, connection_handler, module_storing_p
 
             # break out of the loop if no further data is received
             if not read_data:
-                #print("---- Received read_data was empty ----")
+                # print("---- Received read_data was empty ----")
                 break
 
             # write the retrieved data to the file
@@ -78,12 +77,6 @@ def process_message_high_level_derivation_file(received_data, connection_handler
     database_connector.update_high_level_derivation_files(filename)
 
 
-def process_message_security_mechanism_file(received_data, connection_handler):
-    modul_storing_path = f"Client\Application_Area\Security_Mechanisms\\"
-    module_path = "Client.Application_Area.Security_Mechanisms."
-    filename = process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
-
-
 def process_message_filter_file(received_data, connection_handler):
     modul_storing_path = f"Client\Reasoning_Engine\Filter\\"
     module_path = "Client.Reasoning_Engine.Filter."
@@ -98,16 +91,28 @@ def process_message_keystore_information(received_data_dict):
     database_connector.update_context_information_keystore(received_data_dict)
 
 
-def process_message_security_mechanisms_information(received_data_dict):
+def process_message_security_mechanism_file(received_data, connection_handler):
+    modul_storing_path = f"Client\Application_Area\Security_Mechanisms\\"
+    module_path = "Client.Application_Area.Security_Mechanisms."
+    try:
+        process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
+
+    except:
+        frame_info = getframeinfo(currentframe())
+        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno, """storing received security mechanism file""")
+        return
+
+
+def process_message_security_mechanisms_information(received_data):
     # check if the number of mode_costs and modes is not equal
-    if received_data_dict['modes'] != len(received_data_dict['mode_costs']) or received_data_dict['modes'] != len(received_data_dict['mode_values']):
+    if received_data['modes'] != len(received_data['mode_costs']) or received_data['modes'] != len(received_data['mode_values']):
         frame_info = getframeinfo(currentframe())
         print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
               """update message for security_mechanism_information: the number of modes and mode costs or mode values are not equal""")
         return
 
     # write retrieved information to the database
-    database_connector.update_security_mechanisms_information(received_data_dict)
+    database_connector.update_security_mechanisms_information(received_data)
 
     # call function to create new combinations, costs and values for the updated security mechanism information
     database_connector.create_security_mechanism_combinations()
@@ -159,6 +164,7 @@ def process_message_context_information(received_information):
 
     # convert location tuple with long and lat to string in order to save it in the database
     received_information["location"] = str(received_information["location"])
+
     # save context information with best option evaluation to the database
     database_connector.update_context_information(received_information)
 
