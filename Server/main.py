@@ -1,27 +1,16 @@
 import socket
-import threading
-import time
 
-import Server.Messages.message_filter_file as message_filter_file
-import Server.Messages.message_keystore_information as message_keystore_information
-import Server.Messages.message_security_mechanism_file as message_security_mechanism_file
-import Server.Messages.message_security_mechanism_information as message_security_mechanisms_information
-import Server.Messages.message_weight_calculation_file as message_weight_calculation_file
 import Server.Simulation.sumo_simulation as sumo_simulation
 
-sock = None
 
-
-# created method for socket connection in order to re-establish connection if server was shutdown
-# idea:https://stackoverflow.com/questions/15870614/python-recreate-a-socket-and-automatically-reconnect
 def connection_to_server(message_name):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     port = 65000
+    host = '127.0.0.1'
 
-    # Connect to server and send data
+    # Connect to Client
     try:
-        sock.connect((HOST, port))
-        # sock.sendall(bytes(data + "\n", "utf-8"))
+        sock.connect((host, port))
         print('Connection established')
         return sock
 
@@ -32,42 +21,5 @@ def connection_to_server(message_name):
 
 
 if __name__ == '__main__':
-    HOST = '127.0.0.1'
-    time_format = '%Y-%m-%dT%H:%M:%S.%f'
-
-    thread_security_mechanisms_information = threading.Thread(target=message_security_mechanisms_information.send_security_mechanisms_information,
-                                                              args=(connection_to_server("security_mechanisms_information"),))
-    thread_security_mechanisms_information.start()
-    thread_security_mechanisms_information.join()
-
-    thread_weight_calculation_file = threading.Thread(target=message_weight_calculation_file.send_weight_calculation_file,
-                                                      args=(connection_to_server('weight_calculation_file'),))
-    thread_weight_calculation_file.start()
-    thread_weight_calculation_file.join()
-
-    thread_filter_file = threading.Thread(target=message_filter_file.send_filter_file, args=(connection_to_server('filter_file'),))
-    thread_filter_file.start()
-    thread_filter_file.join()
-
-    thread_security_mechanism_file = threading.Thread(target=message_security_mechanism_file.send_security_mechanism_file,
-                                                      args=(connection_to_server('security_mechanism_file'),))
-    thread_security_mechanism_file.start()
-    thread_security_mechanism_file.join()
-
-    thread_keystore_information = threading.Thread(target=message_keystore_information.send_keystore_update,
-                                                   args=(connection_to_server('keystore_information'),))
-    thread_keystore_information.start()
-
-    # thread_context_information = threading.Thread(target=message_context_information.send_context_information, args=(connection_to_server('context_information'),))
-    # thread_context_information.start()
-
-    thread_context_information = threading.Thread(target=sumo_simulation.simulation_data, args=(connection_to_server('context_information'),))
-    thread_context_information.start()
-    thread_context_information.join()
-
-    print(threading.active_count())
-    print(threading.enumerate())
-    print(time.perf_counter())
-
-    while True:
-        pass
+    # execute SUMO simulation
+    sumo_simulation.simulation_data(connection_to_server("context_information"))
