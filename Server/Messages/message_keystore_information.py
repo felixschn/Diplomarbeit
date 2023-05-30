@@ -1,11 +1,12 @@
 import json
-import socket
 from dataclasses import dataclass, field
 
+import Server.main as main
 
-# class to dynamically update context information attributes and add new ones to the database
+
+# class to create Keystore updates for new context information in the Client's Context Model
 @dataclass()
-class ContextInformationKeystoreUpdate:
+class KeystoreUpdate:
     keyname: str
     minimum_value: float
     maximum_value: float
@@ -14,41 +15,22 @@ class ContextInformationKeystoreUpdate:
     message_type: str = field(default='keystore_update')
 
 
-def connection_to_server(message_name):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    port = 65000
-    host = "127.0.0.1"
-
-    # Connect to server and send data
-    try:
-        sock.connect((host, port))
-        # sock.sendall(bytes(data + "\n", "utf-8"))
-        print("Connection established")
-        return sock
-
-    except:
-        print(f"{message_name}: Couldn't connect, because wrong port or IP address was used", port)
-
-    return
-
-
 def send_keystore_update():
-    sock = connection_to_server("keystore_information")
-    print("Thread 5")
-    time_format = '%Y-%m-%dT%H:%M:%S.%f'
-    context_information_keystore_update_battery_state = ContextInformationKeystoreUpdate('trip_distance', 0, 500, 0,
-                                                                                         5)
+    # establish a socket connection by calling the function in main.py
+    sock = main.connection_to_server("keystore_information")
 
-    while True:
-        if sock:
-            while True:
-                sock.send(bytes(json.dumps(context_information_keystore_update_battery_state.__dict__), encoding='utf-8'))
-                print(json.dumps(context_information_keystore_update_battery_state.__dict__))
-                return
+    # create KeystoreUpdate object
+    keystore_update_battery_state = KeystoreUpdate('trip_distance', 0, 500, 0, 5)
 
-        else:
-            print("Couldn't establish socket connection for keystore_information")
-            print("Will try again after 10 sec ...\n")
+    # sending the created object to the Client if a socket connection is established
+    if sock:
+        print("Sending Keystore Update Message: ")
+        sock.send(bytes(json.dumps(keystore_update_battery_state.__dict__), encoding='utf-8'))
+        print(json.dumps(keystore_update_battery_state.__dict__))
+
+    else:
+        print("Couldn't establish socket connection for keystore_information")
+        print("Will try again after 10 sec ...\n")
 
 
 send_keystore_update()
