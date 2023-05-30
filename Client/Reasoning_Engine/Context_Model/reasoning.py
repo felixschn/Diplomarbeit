@@ -5,7 +5,7 @@ from inspect import getframeinfo, currentframe
 import Client.Data_Engine.database_connector as database_connector
 
 
-def apply_filters(context_information_dict) -> list:
+def apply_filters(received_context_information) -> list:
     necessary_modes_list = []
 
     try:
@@ -36,7 +36,7 @@ def apply_filters(context_information_dict) -> list:
         try:
             # loading and calling 'execute_filter' function from filter_file
             call_filter = getattr(imported_mod, 'execute_filter')
-            necessary_modes_list.extend(call_filter(context_information_dict))
+            necessary_modes_list.extend(call_filter(received_context_information))
 
         except:
             frame_info = getframeinfo(currentframe())
@@ -56,10 +56,8 @@ def calculate_best_combination(calculated_asset, sum_of_max_asset, received_info
     max_combination_cost = database_connector.get_max_combination_cost()
 
     # calculate the cost limit for combinations to choose
-    # weil abstrakte Gewichte und Kosten genommen --> Ermitteltes asset geteilt durch gesamt mägliche asset gibt Verhältnis an, wie viel du dir leisten kannst --> * max = in diesem verhältnis auch zum max cost damit ich die kosten bekommen, die ich mir maximal leisten kann
-    # im idealfall kannst du dir teuerestes Paket leisten und im Idealfall wäre das errechnete Asset gleich dem max Asset --> wenn das nicht der Fall, muss das Verhältnis berechnet werden (siehe oben)
     combination_cost_limit = math.floor(calculated_asset / sum_of_max_asset * max_combination_cost)
-    print("combination_cost_limit: ", combination_cost_limit,"out of ", max_combination_cost)
+    print("combination_cost_limit: ", combination_cost_limit, "out of ", max_combination_cost)
 
     # query the database for the best affordable combinations (best means the highest value and lowest weight)
     best_affordable_combination = database_connector.get_best_affordable_combination(combination_cost_limit, necessary_modes)
