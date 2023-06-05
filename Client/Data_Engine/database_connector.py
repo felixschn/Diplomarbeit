@@ -5,35 +5,28 @@ import re
 import sqlite3
 from collections import deque
 from inspect import getframeinfo, currentframe
+from pathlib import Path
 from urllib.request import pathname2url
 
 db_connection: sqlite3.dbapi2 = None
+
+# create dynamic path declarations
+path_to_project = Path(__file__).parents[2]
+path_to_file = path_to_project.joinpath("Client\\Data_Engine\\system_database.sqlite")
 
 
 def get_cursor():
     global db_connection
     if db_connection is None:
-        db_name = 'D:\PyCharm Projects\Diplomarbeit\Client\Data_Engine\system_database.sqlite'
-
-        # https://stackoverflow.com/questions/12932607/how-to-check-if-a-sqlite3-database-exists-in-python
-        # read, write, create database at given path
+        db_name = str(path_to_file)
         db_uri = 'file:{}?mode=rwc'.format(pathname2url(db_name))
         db_connection = sqlite3.connect(db_uri, uri=True, check_same_thread=False)
 
     return db_connection.cursor()
 
 
-# retrieve the entry with the latest date
-def get_latest_date_entry(table_name) -> str:
+def get_latest_date_entry() -> str:
     db_cursor = get_cursor()
-    # validate if table is stored in the database; idea from: https://stackoverflow.com/questions/305378/list-of-tables-db-schema-dump-etc-using-the-python
-    # -sqlite3-api/33100538#33100538
-    validation_query = "SELECT name FROM sqlite_master WHERE type='table';"
-    db_cursor.execute(validation_query)
-    available_tables_list = [elements[0] for elements in db_cursor.fetchall()]
-
-    if table_name not in available_tables_list:
-        pass
 
     max_date_query = "SELECT MAX(elicitation_date) From received_context_information"
     return db_cursor.execute(max_date_query).fetchall()[0][0]
@@ -46,12 +39,25 @@ def get_security_mechanisms_information() -> list:
 
     try:
         return db_cursor.execute(db_query).fetchall()
+
     except:
         frame_info = getframeinfo(currentframe())
         print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
               """could not find security mechanism information in database""")
         return []
 
+def get_security_mechanism_names():
+    db_cursor = db_connection
+    db_query = "SELECT mechanism_name FROM security_mechanisms_information"
+
+    try:
+        return db_cursor.execute(db_query).fetchall()
+
+    except:
+        frame_info = getframeinfo(currentframe())
+        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
+              """could not find security mechanism information names in database""")
+        return []
 
 def get_security_mechanisms_information_name() -> list:
     db_cursor = get_cursor()
@@ -128,21 +134,17 @@ def get_best_affordable_combination(combination_cost_limit, necessary_modes):
     combination_query_max_value = "SELECT * from security_mechanisms_combination WHERE value = (SELECT MAX(value) from security_mechanisms_combination WHERE cost <= ?"
     combination_query_min_value = "WHERE cost = (SELECT MIN(cost) from ("
 
+    modes_for_query = ""
     # add the necessary modes to the combination_query_max_value
     for mode in necessary_modes:
         # separate mode name and number
         mode_name = "".join((re.findall(r"[a-zA-Z]+", mode)))
         mode_number = "".join((re.findall(r"\d+", mode)))
         # append mode name and number to the query
-        combination_query_max_value += f" AND {mode_name} >= {mode_number}"
+        modes_for_query += f" AND {mode_name} >= {mode_number}"
     # add a closing bracket to the combination_query
-    combination_query_max_value += ")"
-
-    for mode in necessary_modes:
-        mode_name = "".join((re.findall(r"[a-zA-Z]+", mode)))
-        mode_number = "".join((re.findall(r"\d+", mode)))
-        combination_query_max_value += f" AND {mode_name} >= {mode_number}"
-    combination_query_max_value += ")"
+    modes_for_query += ")"
+    combination_query_max_value += 2 * modes_for_query
 
     # merge all the sub queries
     combination_query += combination_query_max_value + " " + combination_query_min_value + combination_query_max_value + ")"
