@@ -1,6 +1,7 @@
 import subprocess
 from inspect import getframeinfo, currentframe
 
+
 def vpn0():
     try:
         result = subprocess.run(["sudo", "wq-quick", "down", "raspi_client.conf"], capture_output=True)
@@ -19,3 +20,13 @@ def vpn1():
         print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
               """could not turn on vpn connection""")
         return
+
+
+def vpn(mode):
+    match mode:
+        case 0:
+            vpn0()
+        case 1:
+            vpn1()
+        case _:
+            print("cannot find vpn mode")
