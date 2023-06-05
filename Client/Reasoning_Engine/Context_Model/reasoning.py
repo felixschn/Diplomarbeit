@@ -18,13 +18,12 @@ def apply_filters(received_context_information) -> list:
               "could not retrieve filters from the database")
         return []
 
-    # loop through the filter names
     for filter_file in filter_list:
-        # remove .py extension for import call
-        formatted_file_name = filter_file[0].replace('.py', '')
+        # remove .py extension for import_module function
+        formatted_file_name = filter_file[0].replace(".py", "")
 
         try:
-            # import the filter_file from Filter directory
+            # import the filter file from Filter directory
             imported_mod = import_module(f"Client.Reasoning_Engine.Filter.{formatted_file_name}")
 
         except:
@@ -34,9 +33,9 @@ def apply_filters(received_context_information) -> list:
             continue
 
         try:
-            # loading and calling 'execute_filter' function from filter_file
-            call_filter = getattr(imported_mod, 'execute_filter')
-            necessary_modes_list.extend(call_filter(received_context_information))
+            # extend necessary mode list by calling execute_filter function of imported filter file
+            filter_function_entry_point = getattr(imported_mod, "execute_filter")
+            necessary_modes_list.extend(filter_function_entry_point(received_context_information))
 
         except:
             frame_info = getframeinfo(currentframe())
@@ -49,17 +48,12 @@ def apply_filters(received_context_information) -> list:
 
 
 def calculate_best_combination(calculated_asset, sum_of_max_asset, received_information):
-    # apply filters to retrieve necessary security mechanism modes
     necessary_modes = apply_filters(received_information)
 
-    # retrieve the heaviest weight value from the combination from the database
+    # determine the best combination (with the highest value and lowest cost) by calculating the cost limit
     max_combination_cost = database_connector.get_max_combination_cost()
-
-    # calculate the cost limit for combinations to choose
     combination_cost_limit = math.floor(calculated_asset / sum_of_max_asset * max_combination_cost)
     print("combination_cost_limit: ", combination_cost_limit, "out of ", max_combination_cost)
-
-    # query the database for the best affordable combinations (best means the highest value and lowest weight)
     best_affordable_combination = database_connector.get_best_affordable_combination(combination_cost_limit, necessary_modes)
 
     return best_affordable_combination
