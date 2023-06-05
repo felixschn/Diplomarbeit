@@ -27,6 +27,7 @@ def asset_calculation_standard(evaluation_dict, keystore_dict) -> float:
 
     for key in evaluation_dict:
         if key in asset_evaluation.high_level_context_information_list:
+            # skip low-level information because it was already used in high-level derivation
             continue
 
         # extract Keystore parameters for each key
