@@ -6,14 +6,15 @@ import tqdm
 
 import Server.main as main
 
+DELIMITER = "<delimiter>"
+BUFFER_SIZE = 4096
+
 # create dynamic path declarations and file information
 path_to_project = Path(__file__).parents[2]
-path_to_file = path_to_project.joinpath("Server\\Loading_Files\\Security_Mechanism\\vpn.py")
+path_to_file = path_to_project.joinpath("Server\\Instruction_Files\\Security_Mechanism\\vpn.py")
 size_of_file = os.path.getsize(f"{path_to_file}")
 filename = path_to_file.name
 message_type = "security_mechanism_file"
-DELIMITER = '<delimiter>'
-BUFFER_SIZE = 4096
 
 
 def send_security_mechanism_file():
@@ -23,7 +24,7 @@ def send_security_mechanism_file():
     # send a message identifier string that contains the message type, filename, and size of the file
     sock.send(f"{message_type}{DELIMITER}{filename}{DELIMITER}{size_of_file}{DELIMITER}".encode())
 
-    # create a graphical bar that will show the progress of the transmission
+    # create a graphical bar that will show the progress of the transmission; optional delay for better graphical representation
     show_progress = tqdm.tqdm(range(size_of_file), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
     time.sleep(1)
 

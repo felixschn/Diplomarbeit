@@ -15,22 +15,19 @@ class KeystoreUpdate:
     message_type: str = field(default='keystore_update')
 
 
-def send_keystore_update():
+def send_keystore_update(keystore_update):
     # establish a socket connection by calling the function in main.py
     sock = main.connection_to_server("keystore_information")
-
-    # create KeystoreUpdate object
-    keystore_update_battery_state = KeystoreUpdate('trip_distance', 0, 500, 0, 5)
 
     # sending the created object to the Client if a socket connection is established
     if sock:
         print("Sending Keystore Update Message: ")
-        sock.send(bytes(json.dumps(keystore_update_battery_state.__dict__), encoding='utf-8'))
-        print(json.dumps(keystore_update_battery_state.__dict__))
+        sock.send(bytes(json.dumps(keystore_update.__dict__), encoding='utf-8'))
+        print(json.dumps(keystore_update.__dict__))
 
     else:
         print("Couldn't establish socket connection for keystore_information")
-        print("Will try again after 10 sec ...\n")
 
 
-send_keystore_update()
+# create KeystoreUpdate object and pass to function
+send_keystore_update(KeystoreUpdate('trip_distance', 0, 500, 0, 5))
