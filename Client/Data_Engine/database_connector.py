@@ -12,14 +12,14 @@ db_connection: sqlite3.dbapi2 = None
 
 # create dynamic path declarations
 path_to_project = Path(__file__).parents[2]
-path_to_file = path_to_project.joinpath("Client\\Data_Engine\\system_database.sqlite")
+path_to_database = path_to_project.joinpath("Client\\Data_Engine\\system_database.sqlite")
 
 
 def get_cursor():
     global db_connection
     if db_connection is None:
-        db_name = str(path_to_file)
-        db_uri = 'file:{}?mode=rwc'.format(pathname2url(db_name))
+        db_name = str(path_to_database)
+        db_uri = "file:{}?mode=rwc".format(pathname2url(db_name))
         db_connection = sqlite3.connect(db_uri, uri=True, check_same_thread=False)
 
     return db_connection.cursor()
@@ -27,112 +27,104 @@ def get_cursor():
 
 def get_latest_date_entry() -> str:
     db_cursor = get_cursor()
-
     max_date_query = "SELECT MAX(elicitation_date) From received_context_information"
-    return db_cursor.execute(max_date_query).fetchall()[0][0]
+
+    try:
+        return db_cursor.execute(max_date_query).fetchall()[0][0]
+
+    except:
+        frame_info = getframeinfo(currentframe())
+        print("ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+              "could not find security mechanism information in database")
+        raise Exception
 
 
 # get all the information about security mechanisms from the database
-def get_security_mechanisms_information() -> list:
+def get_security_mechanism_information() -> list:
     db_cursor = get_cursor()
-    db_query = "SELECT * FROM security_mechanisms_information"
+    db_query = "SELECT * FROM security_mechanism_information"
 
     try:
         return db_cursor.execute(db_query).fetchall()
 
     except:
         frame_info = getframeinfo(currentframe())
-        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
-              """could not find security mechanism information in database""")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+              "could not find security mechanism information in database")
         return []
+
 
 def get_security_mechanism_names():
     db_cursor = db_connection
-    db_query = "SELECT mechanism_name FROM security_mechanisms_information"
+    db_query = "SELECT mechanism_name FROM security_mechanism_information"
 
     try:
         return db_cursor.execute(db_query).fetchall()
 
     except:
         frame_info = getframeinfo(currentframe())
-        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
-              """could not find security mechanism information names in database""")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+              "could not find security mechanism names in database")
         return []
 
-def get_security_mechanisms_information_name() -> list:
-    db_cursor = get_cursor()
-    db_query = "SELECT mechanism_name from security_mechanisms_information"
 
+def get_filter_files() -> list:
+    db_cursor = get_cursor()
+    db_query = "SELECT * FROM filter_files"
     try:
         return db_cursor.execute(db_query).fetchall()
+
     except:
         frame_info = getframeinfo(currentframe())
-        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
-              """could not find security mechanism information in database""")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+              "could not find filter files in database")
         return []
 
 
-# get all filters for the security mechanisms from the database
-def get_security_mechanisms_filter() -> list:
+def update_security_mechanism_information(mechanism_information_update_message):
     db_cursor = get_cursor()
-    db_query = "SELECT * FROM security_mechanisms_filter"
 
-    return db_cursor.execute(db_query).fetchall()
+    create_table_query = "CREATE TABLE if not exists security_mechanism_information(mechanism_name, modes, mode_costs, mode_values)"
+    db_cursor.execute(create_table_query)
 
+    # serialize lists because SQLite can't store them
+    mechanism_information_update_message["mode_costs"] = json.dumps(mechanism_information_update_message["mode_costs"])
+    mechanism_information_update_message["mode_values"] = json.dumps(mechanism_information_update_message["mode_values"])
 
-def update_security_mechanisms_information(mechanisms_information_update_message):
-    db_cursor = get_cursor()
-    # create table for security_mechanisms_information
-    create_mechanisms_information_query = """CREATE TABLE if not exists security_mechanisms_information(mechanism_name, modes, mode_costs, mode_values)"""
-    db_cursor.execute(create_mechanisms_information_query)
+    mechanism_name = mechanism_information_update_message["mechanism_name"]
 
-    # serialize mode_costs because SQLite can't store lists; see:
-    # https://stackoverflow.com/questions/20444155/python-proper-way-to-store-list-of-strings-in-sqlite3-or-mysql
-    mechanisms_information_update_message['mode_costs'] = json.dumps(mechanisms_information_update_message['mode_costs'])
-    mechanisms_information_update_message['mode_values'] = json.dumps(mechanisms_information_update_message['mode_values'])
+    # check if mechanism is already in table to update or insert
+    mechanism_information_entry = db_cursor.execute("SELECT mechanism_name from security_mechanism_information WHERE mechanism_name = ?",
+                                                    [mechanism_name]).fetchall()
+    if len(mechanism_information_entry) == 0:
+        insert_query = "INSERT INTO security_mechanism_information (mechanism_name, modes, mode_costs, mode_values) VALUES (?, ?, ?, ? )"
+        query_params = list(mechanism_information_update_message.values())[:4]
+        db_cursor.execute(insert_query, query_params)
+        db_connection.commit()
 
-    # get the mechanism_name from the database table and check if entry already exists
-    current_columns = db_cursor.execute("SELECT mechanism_name from security_mechanisms_information ").fetchall()
-    # if an entry does not exist, create one
-    if len(current_columns) == 0:
-        pass
-    # otherwise, update the existing entry
-    elif mechanisms_information_update_message['mechanism_name'] in [elem[0] for elem in current_columns]:
-        update_query = """UPDATE security_mechanisms_information SET modes = ?, mode_costs = ?, mode_values = ? WHERE mechanism_name = ?"""
-
-        # get values name, mode, mode_costs, mode_values from the dict
-        query_params = list(mechanisms_information_update_message.values())[:4]
-        # get the name attribute and store it in a separate variable in order to match the update_query requirements, where name has to be the last parameter
-        list_element = query_params[0]
-        # remove the name from the list and append it at the end
-        query_params = [x for x in query_params if x != list_element] + [list_element]
-
+    else:
+        update_query = "UPDATE security_mechanism_information SET modes = ?, mode_costs = ?, mode_values = ? WHERE mechanism_name = ?"
+        query_params = list(mechanism_information_update_message.values())
+        query_params = query_params[1:4] + query_params[:1]
         db_cursor.execute(update_query, query_params)
         db_connection.commit()
-        return
-
-    insert_mechanisms_information_query = """INSERT INTO security_mechanisms_information
-                                    (mechanism_name, modes, mode_costs, mode_values) 
-                                    VALUES (?, ?, ?, ? )"""
-    query_params = list(mechanisms_information_update_message.values())[:4]
-    db_cursor.execute(insert_mechanisms_information_query, query_params)
-    db_connection.commit()
-    return
 
 
 def get_max_combination_cost() -> int:
     db_cursor = get_cursor()
-    return db_cursor.execute("SELECT MAX(cost) FROM security_mechanisms_combination").fetchone()[0]
+
+    try:
+        return db_cursor.execute("SELECT MAX(cost) FROM security_mechanism_combination").fetchone()[0]
+
+    except:
+        frame_info = getframeinfo(currentframe())
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+              "could not retrieve combination with highest costs; calculation proceeds with 0")
+        return 0
 
 
 def get_best_affordable_combination(combination_cost_limit, necessary_modes):
     db_cursor = get_cursor()
-
-    # create a query to retrieve the security mechanism combination with the highest value and lowest cost depending on several conditions like cost or
-    # necessary modes
-    combination_query = "SELECT * from ("
-    combination_query_max_value = "SELECT * from security_mechanisms_combination WHERE value = (SELECT MAX(value) from security_mechanisms_combination WHERE cost <= ?"
-    combination_query_min_value = "WHERE cost = (SELECT MIN(cost) from ("
 
     modes_for_query = ""
     # add the necessary modes to the combination_query_max_value
@@ -140,16 +132,24 @@ def get_best_affordable_combination(combination_cost_limit, necessary_modes):
         # separate mode name and number
         mode_name = "".join((re.findall(r"[a-zA-Z]+", mode)))
         mode_number = "".join((re.findall(r"\d+", mode)))
-        # append mode name and number to the query
         modes_for_query += f" AND {mode_name} >= {mode_number}"
-    # add a closing bracket to the combination_query
     modes_for_query += ")"
-    combination_query_max_value += 2 * modes_for_query
 
-    # merge all the sub queries
-    combination_query += combination_query_max_value + " " + combination_query_min_value + combination_query_max_value + ")"
+    # create a query to retrieve the security mechanism combination with the highest value and lowest cost depending on several conditions like cost or
+    # necessary modes
+    combination_query = "SELECT * from ("
+    combination_query_max_value = "SELECT * from security_mechanism_combination WHERE value = (SELECT MAX(value) from security_mechanism_combination"\
+                                  " WHERE cost <= ?"
+    combination_query_min_value = "WHERE cost = (SELECT MIN(cost) from ("
 
-    # store database query result to affordable_combination
+    # combine pre-defined sql queries with the dynamic necessary modes
+    combination_query_max_value += modes_for_query
+    combination_query_min_value += combination_query_max_value + modes_for_query
+
+    # merge all sub strings to one final query
+    combination_query += combination_query_max_value + modes_for_query + " " + combination_query_min_value + ")"
+
+    # store query result to affordable_combination
     affordable_combinations = db_cursor.execute(combination_query, (combination_cost_limit, combination_cost_limit)).fetchall()
 
     # check if affordable_combinations is empty
@@ -158,10 +158,10 @@ def get_best_affordable_combination(combination_cost_limit, necessary_modes):
         # query to find the combination with the highest value and lowest cost without considering necessary modes because there was no affordable
         # option when considering all necessary modes
         # TODO check if same logic as query above especiall after altering the combination_cost_limit value in reasoning.py (jetzt abgerundet statt aufgerundet)
-        alternative_combination_query = """SELECT * from (SELECT * from security_mechanisms_combination WHERE value = 
-                                        (SELECT MAX(value) from security_mechanisms_combination WHERE cost <= ?)) WHERE cost = 
-                                        (SELECT MIN(cost) from (SELECT * from security_mechanisms_combination WHERE value = 
-                                        (SELECT MAX(value) from security_mechanisms_combination WHERE cost <= ?)))"""
+        alternative_combination_query = """SELECT * from (SELECT * from security_mechanism_combination WHERE value = 
+                                        (SELECT MAX(value) from security_mechanism_combination WHERE cost <= ?)) WHERE cost = 
+                                        (SELECT MIN(cost) from (SELECT * from security_mechanism_combination WHERE value = 
+                                        (SELECT MAX(value) from security_mechanism_combination WHERE cost <= ?)))"""
         affordable_combinations = db_cursor.execute(alternative_combination_query, (combination_cost_limit, combination_cost_limit,)).fetchall()
 
     elif len(affordable_combinations) > 1:
@@ -178,24 +178,24 @@ def create_security_mechanism_combinations():
     db_cursor = get_cursor()
 
     # delete existing security_mechanism_combination table
-    db_cursor.execute("DROP TABLE if exists security_mechanisms_combination")
+    db_cursor.execute("DROP TABLE if exists security_mechanism_combination")
 
-    # create table security_mechanisms_combination with predefined (combination, cost, value) and dynamic columns (available security mechanism columns)
+    # create table security_mechanism_combination with predefined (combination, cost, value) and dynamic columns (available security mechanism columns)
     security_mechanisms_name_deque = deque(["combination", "cost", "value"])
-    security_mechanisms_name_deque.extend(deque((itertools.chain(*get_security_mechanisms_information_name()))))
-    create_combination_query = "CREATE TABLE if not exists security_mechanisms_combination(%s)" % ", ".join(security_mechanisms_name_deque)
+    security_mechanisms_name_deque.extend(deque((itertools.chain(*get_security_mechanism_names()))))
+    create_combination_query = "CREATE TABLE if not exists security_mechanism_combination(%s)" % ", ".join(security_mechanisms_name_deque)
     db_cursor.execute(create_combination_query)
 
     # get the current security mechanism information from the database and initialize the necessary dictionaries to store modes and their costs
-    security_mechanisms_list = get_security_mechanisms_information()
+    security_mechanisms_list = get_security_mechanism_information()
     security_modes = {}
     security_mode_costs = {}
 
     # check if the database returned any security mechanism information
     if not security_mechanisms_list:
         frame_info = getframeinfo(currentframe())
-        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
-              """retireved no security mechanisms information from database""")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+              "retrieved no security mechanisms information from database")
         return
 
     # loop through all security_mechanisms_list entries, create a key for the dict from the mechanism_name, and add all the modes to a list as values of the dict
@@ -214,8 +214,9 @@ def create_security_mechanism_combinations():
 
             except IndexError:
                 frame_info = getframeinfo(currentframe())
-                print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
-                      """creating security_mode or security_mode_list failed; create_all_possible_permutations is not possible\n fix security mechanism information through update message""")
+                print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+                      "creating security_mode or security_mode_list failed; create_all_possible_permutations is not possible\n" \
+                      " fix security mechanism information through update message")
                 return
 
     # get the values (which are the lists) from the dict through unzipping
@@ -226,19 +227,19 @@ def create_security_mechanism_combinations():
     container_list = [v for v in itertools.product(*available_security_mechanisms)]
 
     # create adaptive query with respect to the total amount of keys in context_information_values dict
-    insert_query_string = "INSERT INTO security_mechanisms_combination("
+    insert_query_string = "INSERT INTO security_mechanism_combination("
 
-    # retrieve all keys from dict and write it into query; add necessary ',' to the end
+    # retrieve all keys from dict and write it into query; add necessary "," to the end
     insert_query_string += ",".join(security_mechanisms_name_deque)
 
     # append needed sql statement VALUES
     insert_query_string += ") VALUES ("
 
-    # add placeholder ? for every key in context_information_values; add necessary ',' to the end
-    insert_query_string += len(security_mechanisms_name_deque) * '?,'
+    # add placeholder ? for every key in context_information_values; add necessary "," to the end
+    insert_query_string += len(security_mechanisms_name_deque) * "?,"
 
-    # last ? should not have a ',' in order to have a valid query; close query string with ')'
-    insert_query_string = insert_query_string[:-1] + ')'
+    # last ? should not have a "," in order to have a valid query; close query string with ")"
+    insert_query_string = insert_query_string[:-1] + ")"
 
     # add items to database, commit and close
     # db_cursor.execute(insert_query_string)
@@ -283,21 +284,21 @@ def update_high_level_derivation_files(filename):
     return
 
 
-def update_security_mechanisms_filter(filename):
+def update_filter_files(filter_name):
     db_cursor = get_cursor()
 
-    create_filter_query = """CREATE TABLE if not exists security_mechanisms_filter(filter_name)"""
+    create_filter_query = "CREATE TABLE if not exists filter_files(filter_name)"
     db_cursor.execute(create_filter_query)
 
-    current_columns = db_cursor.execute("SELECT filter_name FROM security_mechanisms_filter").fetchall()
+    current_columns = db_cursor.execute("SELECT filter_name FROM filter_files").fetchall()
     if len(current_columns) == 0:
         pass
 
-    elif filename in [elem[0] for elem in current_columns]:
+    elif filter_name in [elem[0] for elem in current_columns]:
         return
 
-    insert_filter_query = """INSERT INTO security_mechanisms_filter (filter_name) VALUES (?)"""
-    query_params = filename
+    insert_filter_query = "INSERT INTO filter_files (filter_name) VALUES (?)"
+    query_params = filter_name
     db_cursor.execute(insert_filter_query, (query_params,))
     db_connection.commit()
     return
@@ -308,7 +309,7 @@ def update_context_information_keystore(keystore_update_message):
     db_cursor = get_cursor()
 
     # create db table if not already present
-    create_keystore_query = """CREATE TABLE if not exists context_information_keystore(keyname,minimum_value, maximum_value,desirable_value,weight)"""
+    create_keystore_query = "CREATE TABLE if not exists context_information_keystore(keyname,minimum_value, maximum_value,desirable_value,weight)"
     db_cursor.execute(create_keystore_query)
 
     # fetch all table entries to prevent keystore attribute duplicates
@@ -332,8 +333,7 @@ def update_context_information_keystore(keystore_update_message):
         db_connection.commit()
         return
 
-    insert_keystore_query = """INSERT INTO context_information_keystore(keyname,minimum_value,maximum_value,desirable_value,weight) 
-                        VALUES (?,?,?,?,?)"""
+    insert_keystore_query = "INSERT INTO context_information_keystore(keyname,minimum_value,maximum_value,desirable_value,weight) VALUES (?,?,?,?,?)"
 
     db_cursor.execute(insert_keystore_query, list(keystore_update_message.values())[0:5])
     db_connection.commit()
@@ -358,17 +358,17 @@ def update_context_information(context_information_message):
     # create adaptive query with respect to the total amount of keys in context_information_values dict
     insert_query_string = "INSERT INTO received_context_information("
 
-    # retrieve all keys from dict and write it into query; add necessary ',' to the end
+    # retrieve all keys from dict and write it into query; add necessary "," to the end
     insert_query_string += ",".join(context_information_message.keys())
 
     # append needed sql statement VALUES
     insert_query_string += ") VALUES ("
 
-    # add placeholder ? for every key in context_information_values; add necessary ',' to the end
-    insert_query_string += len(context_information_message.keys()) * '?,'
+    # add placeholder ? for every key in context_information_values; add necessary "," to the end
+    insert_query_string += len(context_information_message.keys()) * "?,"
 
-    # last ? should not have a ',' in order to have a valid query; close query string with ')'
-    insert_query_string = insert_query_string[:-1] + ')'
+    # last ? should not have a "," in order to have a valid query; close query string with ")"
+    insert_query_string = insert_query_string[:-1] + ")"
 
     # add items to database, commit and close
     db_cursor.execute(insert_query_string, list(context_information_message.values()))
