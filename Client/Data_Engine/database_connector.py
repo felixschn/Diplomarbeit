@@ -1,6 +1,5 @@
 import itertools
 import json
-import random
 import re
 import sqlite3
 from collections import deque
@@ -137,8 +136,8 @@ def get_best_affordable_combination(combination_cost_limit, necessary_modes):
 
     # create a query to retrieve the security mechanism combination with the highest value and lowest cost depending on several conditions like cost or
     # necessary modes
-    combination_query = "SELECT * from ("
-    combination_query_max_value = "SELECT * from security_mechanism_combination WHERE value = (SELECT MAX(value) from security_mechanism_combination"\
+    combination_query = "SELECT combination from ("
+    combination_query_max_value = "SELECT * from security_mechanism_combination WHERE value = (SELECT MAX(value) from security_mechanism_combination" \
                                   " WHERE cost <= ?"
     combination_query_min_value = "WHERE cost = (SELECT MIN(cost) from ("
 
@@ -152,26 +151,20 @@ def get_best_affordable_combination(combination_cost_limit, necessary_modes):
     # store query result to affordable_combination
     affordable_combinations = db_cursor.execute(combination_query, (combination_cost_limit, combination_cost_limit)).fetchall()
 
-    # check if affordable_combinations is empty
+    # if no affordable combination with necessary modes was found;
+    # neglect necessary modes and get alternative combination with the highest value and lowest cost
     if not affordable_combinations:
         print(f"No affordable combinations concerning the filters are available; proceeding with alternative combinations")
-        # query to find the combination with the highest value and lowest cost without considering necessary modes because there was no affordable
-        # option when considering all necessary modes
-        # TODO check if same logic as query above especiall after altering the combination_cost_limit value in reasoning.py (jetzt abgerundet statt aufgerundet)
-        alternative_combination_query = """SELECT * from (SELECT * from security_mechanism_combination WHERE value = 
+
+        alternative_combination_query = """SELECT combination from (SELECT * from security_mechanism_combination WHERE value = 
                                         (SELECT MAX(value) from security_mechanism_combination WHERE cost <= ?)) WHERE cost = 
                                         (SELECT MIN(cost) from (SELECT * from security_mechanism_combination WHERE value = 
                                         (SELECT MAX(value) from security_mechanism_combination WHERE cost <= ?)))"""
         affordable_combinations = db_cursor.execute(alternative_combination_query, (combination_cost_limit, combination_cost_limit,)).fetchall()
 
-    elif len(affordable_combinations) > 1:
-        # TODO think about what to do in case both the cost and value of the chosen combinations are equal --> Normally, the program should have chosen
-        #  equally strong mechanism combinations, so which combination the program chooses is unimportant.
-
-        # return one of the combinations randomly
-        return affordable_combinations[random.randint(0, len(affordable_combinations) - 1)][0]
-
-    return affordable_combinations[0][0]
+    # return always the first item of affordable_combinations; either affordable_combinations consists of a single combination or multiple combinations
+    # are equally strong and, thus, it is unimportant which one is selected
+    return affordable_combinations[0]
 
 
 def create_security_mechanism_combinations():
