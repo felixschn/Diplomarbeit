@@ -8,9 +8,9 @@ from pathlib import Path
 import tqdm
 
 import Client.Application_Area.Security_Mechanisms.set_security_mechanisms
-import Client.Reasoning_Engine.Context_Model.Rule_Set.asset_evaluation
-import Client.Reasoning_Engine.Context_Model.reasoning
 from Client.Data_Engine import database_connector
+from Client.Reasoning_Engine.Context_Model.Rule_Set.asset_evaluation import asset_evaluation
+from Client.Reasoning_Engine.Context_Model.reasoning import calculate_best_combination
 
 HOST = "localhost"
 BUFFER_SIZE = 4096
@@ -26,25 +26,22 @@ def reload_retrieved_modules(filename, module_path):
     formatted_file_name = filename.replace('.py', '')
     imported_mod = import_module(f"{module_path}{formatted_file_name}")
 
-    # note: Due to a security feature of the reload function, existing functions of a module remain if they are not overwritten through an update; see: the docs and
-    # https://stackoverflow.com/questions/58946837/reload-function-fails-to-erase-removed-variables
-    # to avoid any problems with not removed functions, the filter files will contain only one public function which has to be present and, therefore, never get deleted
+    # note: due to a security feature of the reload function, existing functions of a module remain if they are not overwritten through an update;
+    # to avoid any problems with not removed functions, the instruction files will contain only one public function
+    # which has to be present and, therefore, never get deleted
     reload(imported_mod)
 
 
 def process_incoming_message(received_data, connection_handler, module_storing_path, module_path) -> str:
-    # check if received data is not empty
     if len(received_data) == 0:
-        return
-
-    # print(f"Empfangen: {received_data}\n")
+        raise Exception
 
     # store the received data in variables
     _, filename, size_of_file, file_content = received_data.split(DELIMITER)
     size_of_file = int(size_of_file)
     show_progress = tqdm.tqdm(range(size_of_file), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
 
-    # write the received data to a file in the 'Rule_Set' directory
+    # write the received data to a file in the respective directory
     path_to_project = Path(__file__).parents[2]
     path_to_file = path_to_project.joinpath(module_storing_path + filename)
 
@@ -52,14 +49,10 @@ def process_incoming_message(received_data, connection_handler, module_storing_p
         while True:
             read_data = connection_handler.request.recv(BUFFER_SIZE)
 
-            # break out of the loop if no further data is received
             if not read_data:
-                # print("---- Received read_data was empty ----")
                 break
 
-            # write the retrieved data to the file
             received_file.write(read_data)
-            # update the process bar
             show_progress.update(len(read_data))
 
     # reloading the modules to process context information with the newest data
@@ -71,119 +64,131 @@ def process_incoming_message(received_data, connection_handler, module_storing_p
 def process_message_high_level_derivation_file(received_data, connection_handler):
     modul_storing_path = f"Client\Reasoning_Engine\Context_Model\Rule_Set\\"
     module_path = "Client.Reasoning_Engine.Context_Model.Rule_Set."
-    filename = process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
 
-    # update the database with a filter name from the added filter file
-    database_connector.update_high_level_derivation_files(filename)
+    try:
+        filename = process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
+
+    except:
+        frame_info = getframeinfo(currentframe())
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "storing received high_level_derivation_file failed")
+        return
+
+    # update the database with the received high_level_derivation file name
+    database_connector.insert_high_level_derivation_files(filename)
 
 
 def process_message_filter_file(received_data, connection_handler):
     modul_storing_path = f"Client\Reasoning_Engine\Filter\\"
     module_path = "Client.Reasoning_Engine.Filter."
-    filename = process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
 
-    # update the database with a filter name from the added filter file
-    database_connector.update_security_mechanisms_filter(filename)
+    try:
+        filename = process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
 
+    except:
+        frame_info = getframeinfo(currentframe())
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "storing received filter_file failed")
+        return
 
-def process_message_keystore_information(received_data_dict):
-    # deserialization of the received byte string back to json format in order to create table columns from dictionary keys
-    database_connector.update_context_information_keystore(received_data_dict)
+    # update the database with the received filter_file name
+    database_connector.insert_filter_files(filename)
 
 
 def process_message_security_mechanism_file(received_data, connection_handler):
+    # only store new file to directory; storing file name into database is not required due to the existing (and necessary) security_mechanism_information entry
     modul_storing_path = f"Client\Application_Area\Security_Mechanisms\\"
     module_path = "Client.Application_Area.Security_Mechanisms."
+
     try:
         process_incoming_message(received_data, connection_handler, modul_storing_path, module_path)
 
     except:
         frame_info = getframeinfo(currentframe())
-        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno, """storing received security mechanism file""")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "storing received security mechanism file")
         return
+
+
+def process_message_keystore_information(received_data_dict):
+    database_connector.update_context_information_keystore(received_data_dict)
 
 
 def process_message_security_mechanisms_information(received_data):
-    # check if the number of mode_costs and modes is not equal
+    # check if the number of mode_costs and modes is equal
     if received_data['modes'] != len(received_data['mode_costs']) or received_data['modes'] != len(received_data['mode_values']):
         frame_info = getframeinfo(currentframe())
-        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
-              """update message for security_mechanism_information: the number of modes and mode costs or mode values are not equal""")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "update message for security_mechanism_information:" \
+                                                                                 "the number of modes and mode costs or mode values are not equal")
         return
 
-    # write retrieved information to the database
-    database_connector.update_security_mechanisms_information(received_data)
+    database_connector.update_security_mechanism_information(received_data)
 
-    # call function to create new combinations, costs and values for the updated security mechanism information
+    # call function to create new combinations, costs and values when receiving new security mechanism information
     database_connector.create_security_mechanism_combinations()
 
 
-def process_message_context_information(received_information):
+def process_message_context_information(received_context_information):
+    # exemplary way to check Quality of Context by running timestamp comparison
     try:
-        if datetime.strptime(received_information['elicitation_date'], time_format) > datetime.now() + timedelta(minutes=0):
-            print("""[ERROR]: date from received data is greater than system time; Context data will be ignored\n""")
+        # reject messages with timestamp greater than system time
+        if datetime.strptime(received_context_information['elicitation_date'], time_format) > datetime.now() + timedelta(minutes=0):
+            print("[ERROR]: date from received data is greater than system time; Context data will be ignored\n")
+            return
+
+        # reject messages with timestamp older than last database entry
+        if datetime.strptime(received_context_information['elicitation_date'], time_format) < datetime.strptime(
+                database_connector.get_latest_date_entry(), time_format):
+            print("Received context information is older than the latest database entry")
+            print("Context data will be ignored")
+            print("-----------------------------")
             return
 
     except:
         frame_info = getframeinfo(currentframe())
-        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno, """while comparing system time with received context information in""")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+              "timestamp error while comparing the latest database entry with received context information")
         return
 
-    # try:
-    #     if datetime.strptime(received_information['elicitation_date'], time_format) < datetime.strptime(
-    #             database_connector.get_latest_date_entry(db_table_name), time_format):
-    #         # TODO decide how to deal with received data which is older then the latest database entry --> save but not process or not even save?
-    #         print("Received context information is older than the latest database entry")
-    #         print("Context data will be ignored")
-    #         print("-----------------------------")
-    #         return
-    # except:
-    #     print("timestamp error while comparing the latest database entry with received context information")
-
     try:
-        calculated_asset, sum_of_max_asset = Client.Reasoning_Engine.Context_Model.Rule_Set.asset_evaluation.asset_evaluation(received_information)
-        received_information['asset'] = calculated_asset
+        # asset calculation to prepare later best option choice
+        calculated_asset, sum_of_max_asset = asset_evaluation(received_context_information)
+        received_context_information["asset"] = calculated_asset
         print("calculated asset: ", calculated_asset)
 
     except:
         frame_info = getframeinfo(currentframe())
-        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
-              """asset calculation was not possible\nfurther message processing not possible""")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "asset calculation was not possible\nfurther message processing not possible")
         return
 
     try:
-        best_option = Client.Reasoning_Engine.Context_Model.reasoning.calculate_best_combination(calculated_asset, sum_of_max_asset, received_information)
-        print(best_option, "\n")
-        received_information['best_option'] = str(best_option)
+        # based on the asset calculation and cost of security mechanisms combination; the best combination is selected
+        best_option = calculate_best_combination(calculated_asset, sum_of_max_asset, received_context_information)
+        print("best option: ", best_option, "\n")
 
     except:
         frame_info = getframeinfo(currentframe())
-        print("""[ERROR]: in""", frame_info.filename, "in line:", frame_info.lineno,
-              """best_option calculation was not possible\n further message processing not possible""")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+              "best_option calculation was not possible\n further message processing not possible")
         return
 
-    # convert location tuple with long and lat to string in order to save it in the database
-    received_information["location"] = str(received_information["location"])
+    # convert tuple values to string to save it in the database
+    received_context_information["location"] = str(received_context_information["location"])
+    received_context_information['best_option'] = str(best_option)
+    database_connector.insert_context_information(received_context_information)
 
-    # save context information with best option evaluation to the database
-    database_connector.update_context_information(received_information)
-
-    # check if the best_option tuple is not empty
-    # if best_option:
-    # give best_option to set_security_mechanisms function in order to set the appropriated mechanisms and their modes
-    # Client.set_security_mechanisms.set_security_mechanisms(best_option)
+    # set security mechanism modes of best_option
+    if best_option:
+        Client.Application_Area.Security_Mechanisms.set_security_mechanisms.set_security_mechanisms(best_option)
 
 
 class ConnectionTCPHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
-        print(f'\nConnected: {self.client_address[0]}:{self.client_address[1]}')
+        print(f"\nConnected: {self.client_address[0]}:{self.client_address[1]}")
+
+        # loop is necessary to received recurring context information messages
         while True:
             try:
                 self.data = self.request.recv(1024).strip()
                 received_time = datetime.now()
                 if not self.data.decode():
-                    # print("----Received message was empty----")
-                    # print("----Waiting for new message----")
                     break
             except:
                 print("----Lost connection to client----")
@@ -195,15 +200,15 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
 
             if "security_mechanisms_filter" in self.data.decode():
                 process_message_filter_file(self.data.decode(), self)
-                continue
+                break
 
             if "security_mechanism_file" in self.data.decode():
                 process_message_security_mechanism_file(self.data.decode(), self)
-                continue
+                break
 
             if "high_level_derivation_file" in self.data.decode():
                 process_message_high_level_derivation_file(self.data.decode(), self)
-                continue
+                break
 
             # create a dict out of the received data and forward the data to designated methods to process the data for context evaluation
             try:
@@ -218,18 +223,16 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
                         process_message_security_mechanisms_information(received_data_dict)
                     case _:
                         frame_info = getframeinfo(currentframe())
-                        print("""\n[ERROR] in""", frame_info.filename, "in line", frame_info.lineno,
-                              """\nmessage type is unknown, received data will be ignored""")
+                        print("\n[ERROR] in", frame_info.filename, "in line", frame_info.lineno, "\nmessage type is unknown, received data will be ignored")
                         break
 
             except json.JSONDecodeError:
                 frame_info = getframeinfo(currentframe())
-                print("[ERROR] in""", frame_info.filename, "in line", frame_info.lineno,
-                      """\n'transformation of received data failed'""")
+                print("[ERROR] in", frame_info.filename, "in line", frame_info.lineno, "transformation of received data failed")
                 break
 
 
 with socketserver.ThreadingTCPServer((HOST, PORT), ConnectionTCPHandler) as server:
-    # Activate the server; this will keep running until an interrupt is sent to the program with Ctrl-C
+    # activate the socket server; this will keep running until an interrupt is sent to the program with Ctrl-C
     print("---- Waiting for connection at port", PORT, "----")
     server.serve_forever()
