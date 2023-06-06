@@ -10,7 +10,7 @@ def apply_filters(received_context_information) -> list:
 
     try:
         # get available filter names out of database
-        filter_list = database_connector.get_security_mechanisms_filter()
+        filter_list = database_connector.get_filter_files()
 
     except:
         frame_info = getframeinfo(currentframe())
