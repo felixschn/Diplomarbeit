@@ -2,7 +2,7 @@ import subprocess
 from inspect import getframeinfo, currentframe
 
 
-def vpn0():
+def _vpn0():
     try:
         result = subprocess.run(["sudo", "wq-quick", "down", "raspi_client.conf"], capture_output=True)
     except:
@@ -12,7 +12,7 @@ def vpn0():
         return
 
 
-def vpn1():
+def _vpn1():
     try:
         result = subprocess.run(["sudo", "wq-quick", "up", "raspi_client.conf"], capture_output=True)
     except:
@@ -25,8 +25,8 @@ def vpn1():
 def vpn(mode):
     match mode:
         case 0:
-            vpn0()
+            _vpn0()
         case 1:
-            vpn1()
+            _vpn1()
         case _:
             print("cannot find vpn mode")
