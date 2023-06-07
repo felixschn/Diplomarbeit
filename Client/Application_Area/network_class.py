@@ -15,9 +15,6 @@ from Client.Reasoning_Engine.Context_Model.reasoning import calculate_best_combi
 HOST = "localhost"
 BUFFER_SIZE = 4096
 DELIMITER = "<delimiter>"
-
-# the range of possible port numbers must be n-1 with respect to the for loop in the function called connection to server in main.py, or else the server will
-# listen to a port that has never been called from the client
 PORT = 65000
 time_format = '%Y-%m-%dT%H:%M:%S.%f'
 
@@ -27,8 +24,8 @@ def reload_retrieved_modules(filename, module_path):
     imported_mod = import_module(f"{module_path}{formatted_file_name}")
 
     # note: due to a security feature of the reload function, existing functions of a module remain if they are not overwritten through an update;
-    # to avoid any problems with not removed functions, the instruction files will contain only one public function
-    # which has to be present and, therefore, never get deleted
+    # to avoid any problems with not-removed functions, the instruction files will contain only one public function
+    # that has to be present and, therefore, never get deleted
     reload(imported_mod)
 
 
@@ -70,7 +67,7 @@ def process_message_high_level_derivation_file(received_data, connection_handler
 
     except:
         frame_info = getframeinfo(currentframe())
-        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "storing received high_level_derivation_file failed")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "storing the received high_level_derivation_file failed")
         return
 
     # update the database with the received high_level_derivation file name
@@ -86,7 +83,7 @@ def process_message_filter_file(received_data, connection_handler):
 
     except:
         frame_info = getframeinfo(currentframe())
-        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "storing received filter_file failed")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "storing the received filter_file failed")
         return
 
     # update the database with the received filter_file name
@@ -94,7 +91,8 @@ def process_message_filter_file(received_data, connection_handler):
 
 
 def process_message_security_mechanism_file(received_data, connection_handler):
-    # only store new file to directory; storing file name into database is not required due to the existing (and necessary) security_mechanism_information entry
+    # only store files in the directory; storing file names in the database is not required
+    # due to the existing (and necessary) security_mechanism_information entry
     modul_storing_path = f"Client\Application_Area\Security_Mechanisms\\"
     module_path = "Client.Application_Area.Security_Mechanisms."
 
@@ -103,7 +101,7 @@ def process_message_security_mechanism_file(received_data, connection_handler):
 
     except:
         frame_info = getframeinfo(currentframe())
-        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "storing received security mechanism file")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "storing the received security mechanism file")
         return
 
 
@@ -112,7 +110,7 @@ def process_message_keystore_information(received_data_dict):
 
 
 def process_message_security_mechanisms_information(received_data):
-    # check if the number of mode_costs and modes is equal
+    # check if the number of modes, mode_costs, and mode_values are equal
     if received_data['modes'] != len(received_data['mode_costs']) or received_data['modes'] != len(received_data['mode_values']):
         frame_info = getframeinfo(currentframe())
         print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "update message for security_mechanism_information:" \
@@ -121,24 +119,22 @@ def process_message_security_mechanisms_information(received_data):
 
     database_connector.update_security_mechanism_information(received_data)
 
-    # call function to create new combinations, costs and values when receiving new security mechanism information
+    # call function to create new combinations, costs, and values when receiving new security mechanism information
     database_connector.create_security_mechanism_combinations()
 
 
 def process_message_context_information(received_context_information):
-    # exemplary way to check Quality of Context by running timestamp comparison
+    # an exemplary way to check Quality of Context by running a timestamp comparison
     try:
-        # reject messages with timestamp greater than system time
+        # reject messages with a timestamp greater than system time
         if datetime.strptime(received_context_information['elicitation_date'], time_format) > datetime.now() + timedelta(minutes=0):
-            print("[ERROR]: date from received data is greater than system time; Context data will be ignored\n")
+            print("[ERROR]: date from received data is greater than system time; context information will be ignored")
             return
 
-        # reject messages with timestamp older than last database entry
+        # reject messages with a timestamp older than the last database entry
         if datetime.strptime(received_context_information['elicitation_date'], time_format) < datetime.strptime(
                 database_connector.get_latest_date_entry(), time_format):
-            print("Received context information is older than the latest database entry")
-            print("Context data will be ignored")
-            print("-----------------------------")
+            print("The received context information is older than the latest database entry; context information will be ignored")
             return
 
     except:
@@ -149,28 +145,29 @@ def process_message_context_information(received_context_information):
 
     try:
         print("----------Evaluation Process----------")
-        # asset calculation to prepare later best option choice
+        # asset calculation to prepare the best option evaluation
         calculated_asset, sum_of_max_asset = asset_evaluation(received_context_information)
         received_context_information["asset"] = calculated_asset
         print("calculated asset: ".ljust(33), calculated_asset)
 
     except:
         frame_info = getframeinfo(currentframe())
-        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "asset calculation was not possible\nfurther message processing not possible")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+              "asset calculation was not possible; further message processing is not possible")
         return
 
     try:
-        # based on the asset calculation and cost of security mechanisms combination; the best combination is selected
+        # based on the asset calculation and the cost of the security mechanism combinations, the best combination is selected
         best_option = calculate_best_combination(calculated_asset, sum_of_max_asset, received_context_information)
         print("best option: ".ljust(33), best_option)
 
     except:
         frame_info = getframeinfo(currentframe())
         print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
-              "best_option calculation was not possible\n further message processing not possible")
+              "best_option calculation was not possible; further message processing is not possible")
         return
 
-    # convert tuple values to string to save it in the database
+    # convert tuple values to strings to save them in the database
     received_context_information["location"] = str(received_context_information["location"])
     received_context_information['best_option'] = str(best_option)
     database_connector.insert_context_information(received_context_information)
@@ -184,7 +181,7 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
         print(f"\nConnected: {self.client_address[0]}:{self.client_address[1]}")
 
-        # loop is necessary to received recurring context information messages
+        # loop is necessary to receive recurring context information messages
         while True:
             try:
                 self.data = self.request.recv(1024).strip()
@@ -192,7 +189,7 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
                 if not self.data.decode():
                     break
             except:
-                print("----------Lost Connection to Client----------")
+                print("----------Lost Connection to the Client----------")
                 print("----------Waiting for Reconnection----------")
                 break
 
@@ -225,7 +222,8 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
                         process_message_security_mechanisms_information(received_data_dict)
                     case _:
                         frame_info = getframeinfo(currentframe())
-                        print("\n[ERROR] in", frame_info.filename, "in line", frame_info.lineno, "\nmessage type is unknown, received data will be ignored")
+                        print("[ERROR]: in", frame_info.filename, "in line", frame_info.lineno,
+                              "the message type is unknown, the received data will be ignored")
                         break
 
             except json.JSONDecodeError:
@@ -235,6 +233,6 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
 
 
 with socketserver.ThreadingTCPServer((HOST, PORT), ConnectionTCPHandler) as server:
-    # activate the socket server; this will keep running until an interrupt is sent to the program with Ctrl-C
-    print("---- Waiting for connection at port", PORT, "----")
+    # activate the socket server; this will keep running until an interrupt is sent
+    print("---------- Waiting for Connection at Port:", PORT, "----------")
     server.serve_forever()

@@ -4,9 +4,9 @@ from inspect import getframeinfo, currentframe
 
 
 def set_security_mechanisms(best_option):
-    print("----------Setting Security Mechanism Mode----------")
+    print("----------Setting Security Mechanism Modes----------")
 
-    # extract security mechanism modes from best options and execute them
+    # extract security mechanism modes from the best option and execute them
     for security_mechanism in best_option:
         mechanism_name = "".join((re.findall(r"[a-zA-Z]+", security_mechanism)))
         mode_number = int("".join((re.findall(r"\d+", security_mechanism))))
