@@ -148,10 +148,11 @@ def process_message_context_information(received_context_information):
         return
 
     try:
+        print("----------Evaluation Process----------")
         # asset calculation to prepare later best option choice
         calculated_asset, sum_of_max_asset = asset_evaluation(received_context_information)
         received_context_information["asset"] = calculated_asset
-        print("calculated asset: ", calculated_asset)
+        print("calculated asset: ".ljust(33), calculated_asset)
 
     except:
         frame_info = getframeinfo(currentframe())
@@ -161,7 +162,7 @@ def process_message_context_information(received_context_information):
     try:
         # based on the asset calculation and cost of security mechanisms combination; the best combination is selected
         best_option = calculate_best_combination(calculated_asset, sum_of_max_asset, received_context_information)
-        print("best option: ", best_option, "\n")
+        print("best option: ".ljust(33), best_option)
 
     except:
         frame_info = getframeinfo(currentframe())
@@ -191,10 +192,11 @@ class ConnectionTCPHandler(socketserver.StreamRequestHandler):
                 if not self.data.decode():
                     break
             except:
-                print("----Lost connection to client----")
-                print("----Waiting for reconnection----")
+                print("----------Lost Connection to Client----------")
+                print("----------Waiting for Reconnection----------")
                 break
 
+            print("\n----------Incoming Message----------")
             print(f"{self.client_address[0]} wrote at {received_time}: ")
             print(self.data.decode('utf-8'))
 

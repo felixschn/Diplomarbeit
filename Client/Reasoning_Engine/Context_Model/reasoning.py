@@ -53,7 +53,7 @@ def calculate_best_combination(calculated_asset, sum_of_max_asset, received_info
     # determine the best combination (with the highest value and lowest cost) by calculating the cost limit
     max_combination_cost = database_connector.get_max_combination_cost()
     combination_cost_limit = math.floor(calculated_asset / sum_of_max_asset * max_combination_cost)
-    print("combination_cost_limit: ", combination_cost_limit, "out of ", max_combination_cost)
+    print("combination_cost_limit: ".ljust(33), combination_cost_limit, "out of ", max_combination_cost)
     best_affordable_combination = database_connector.get_best_affordable_combination(combination_cost_limit, necessary_modes)
 
     return best_affordable_combination

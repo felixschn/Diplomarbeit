@@ -69,16 +69,16 @@ def simulation_data(sock):
 
         # print statements for potential debugging
         print("\n----------New Simulation Step----------")
-        print("Distance: ", traci.vehicle.getDistance("main_vehicle"))
-        print("Distance_To_Target: ", trip_distance)
-        print("Accumulated_Waiting_Time: ", traci.vehicle.getAccumulatedWaitingTime("main_vehicle"))
-        print("Following_Car: ", traci.vehicle.getFollower("main_vehicle"))
-        print("Battery_Capacity: ", traci.vehicle.getParameter("main_vehicle", "device.battery.actualBatteryCapacity"))
-        print("Energy_Consumption: ", traci.vehicle.getParameter("main_vehicle", "device.battery.energyConsumed"))
-        print("TotalEnergy_Consumed: ", traci.vehicle.getParameter("main_vehicle", "device.battery.totalEnergyConsumed"))
-        print("Energy_Charged: ", traci.vehicle.getParameter("main_vehicle", "device.battery.energyCharged"))
-        print("Electricity_Consumption: ", traci.vehicle.getElectricityConsumption("main_vehicle"))
-        print("Vehicle_Position (long, lat): ", long, lat)
+        print("Distance: ".ljust(30), traci.vehicle.getDistance("main_vehicle"))
+        print("Distance_To_Target: ".ljust(30), trip_distance)
+        print("Accumulated_Waiting_Time: ".ljust(30), traci.vehicle.getAccumulatedWaitingTime("main_vehicle"))
+        print("Battery_Capacity: ".ljust(30), traci.vehicle.getParameter("main_vehicle", "device.battery.actualBatteryCapacity"))
+        print("Energy_Consumption: ".ljust(30), traci.vehicle.getParameter("main_vehicle", "device.battery.energyConsumed"))
+        print("TotalEnergy_Consumed: ".ljust(30), traci.vehicle.getParameter("main_vehicle", "device.battery.totalEnergyConsumed"))
+        print("Energy_Charged: ".ljust(30), traci.vehicle.getParameter("main_vehicle", "device.battery.energyCharged"))
+        print("Electricity_Consumption: ".ljust(30), traci.vehicle.getElectricityConsumption("main_vehicle"))
+        print("Vehicle_Position (long, lat): ".ljust(30), long, lat)
+        print("Following_Car: ".ljust(30), traci.vehicle.getFollower("main_vehicle"))
 
         # sending the retrieved vehicle values
         if sock:
