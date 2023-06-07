@@ -11,7 +11,7 @@ BUFFER_SIZE = 4096
 
 # create dynamic path declarations and file information
 path_to_project = Path(__file__).parents[2]
-path_to_file = path_to_project.joinpath("Server\\Instruction_Files\\Filter\\dangerous_area.py")
+path_to_file = path_to_project.joinpath("Server\\Instruction_Files\\Filter\\follower.py")
 size_of_file = os.path.getsize(f"{path_to_file}")
 filename = path_to_file.name
 message_type = "security_mechanisms_filter"
