@@ -9,7 +9,7 @@ def apply_filters(received_context_information) -> list:
     necessary_modes_list = []
 
     try:
-        # get available filter names out of database
+        # get available filter names out of the database
         filter_list = database_connector.get_filter_files()
 
     except:
@@ -19,31 +19,31 @@ def apply_filters(received_context_information) -> list:
         return []
 
     for filter_file in filter_list:
-        # remove .py extension for import_module function
+        # remove .py extension for the import_module function
         formatted_file_name = filter_file[0].replace(".py", "")
 
         try:
-            # import the filter file from Filter directory
+            # import the filter file from the Filter directory
             imported_mod = import_module(f"Client.Reasoning_Engine.Filter.{formatted_file_name}")
 
         except:
             frame_info = getframeinfo(currentframe())
             print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
-                  "could not import filter: ", formatted_file_name)
+                  "could not import the filter file: ", formatted_file_name)
             continue
 
         try:
-            # extend necessary mode list by calling execute_filter function of imported filter file
+            # extend the necessary mode list by calling the execute_filter function of the imported filter file
             filter_function_entry_point = getattr(imported_mod, "execute_filter")
             necessary_modes_list.extend(filter_function_entry_point(received_context_information))
 
         except:
             frame_info = getframeinfo(currentframe())
             print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
-                  "could not execute filter: ", formatted_file_name)
+                  "could not execute the filter file: ", formatted_file_name)
             continue
 
-    # return necessary_modes_list that contains no duplicates
+    # return the necessary_modes_list that contains no duplicates
     return list(set(necessary_modes_list))
 
 

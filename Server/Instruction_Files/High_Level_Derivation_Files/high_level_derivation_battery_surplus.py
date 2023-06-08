@@ -13,7 +13,7 @@ def high_level_derivation(evaluation_dict) -> float:
               """missing low-level context information for calculating battery surplus""")
         return 0
 
-    # add required low-level context information to list to ignore them in standard asset calculation
+    # add the required low-level context information to the list to ignore it in standard asset calculation
     asset_evaluation.high_level_context_information_list.extend(battery_surplus_attributes_list)
 
     # battery_state                     in   %
@@ -41,7 +41,7 @@ def high_level_derivation(evaluation_dict) -> float:
 
     if battery_surplus < 0.2:
         print("battery_surplus is dangerous")
-        # half weight because the small battery_surplus is still critical
+        # half weight because the small battery surplus is still dangerous
         return battery_surplus * weight_battery_surplus * 0.5
 
     if battery_surplus > max_surplus:
@@ -49,5 +49,5 @@ def high_level_derivation(evaluation_dict) -> float:
 
     print("battery_surplus is good")
 
-    # return battery_surplus with required Keystore Parameter
+    # return battery_surplus with the required Keystore Parameter
     return asset_calculation_standard.asset_calculation(battery_surplus, min_surplus, max_surplus, max_surplus, weight_battery_surplus)

@@ -20,7 +20,7 @@ def simulation_data(sock):
         sys.path.append(tools)
 
     else:
-        sys.exit("please declare environment variable Sumo_Configuration HOME")
+        sys.exit("please declare an environment variable Sumo_Configuration HOME")
 
     sumo_binary = os.path.join(os.environ["SUMO_HOME"], "bin", "sumo-gui.exe")
     sumo_cmd = [sumo_binary, "-c", path_to_sumo_conf]
@@ -36,11 +36,11 @@ def simulation_data(sock):
             traci.close()
             return
 
-        # retrieve current longitude and latitude of the simulated vehicle
+        # retrieve the current longitude and latitude of the simulated vehicle
         vehicle_position_x, vehicle_position_y = traci.vehicle.getPosition("main_vehicle")
         long, lat = traci.simulation.convertGeo(vehicle_position_x, vehicle_position_y)
 
-        # retrieve the remaining trip distance *to* the last edge (remaining length of last edge is neglected by getDrivingDistance function)
+        # retrieve the remaining trip distance *to* the last edge (the remaining length of the last edge is neglected by the getDrivingDistance function)
         trip_distance = traci.vehicle.getDrivingDistance("main_vehicle", "-5115636#7", traci.vehicle.getLanePosition("main_vehicle"))
         trip_distance -= traci.vehicle.getLanePosition("main_vehicle")
         # avoiding division with zero
@@ -90,4 +90,4 @@ def simulation_data(sock):
             print("\nSending: ", json.dumps(context_information))
 
         else:
-            print("\n[Error]: Couldn't establish socket connection for context information message")
+            print("[Error]: Couldn't establish a socket connection for context information message")

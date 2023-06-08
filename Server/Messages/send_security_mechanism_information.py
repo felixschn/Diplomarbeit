@@ -27,5 +27,5 @@ def send_security_mechanisms_information(security_mechanism_information):
         print("Couldn't establish socket connection for security_mechanisms_information")
 
 
-# create SecurityMechanismInformation object and pass to function
+# create SecurityMechanismInformation object and send it to the Client
 send_security_mechanisms_information(SecurityMechanismInformation('vpn', 2, [0, 15], [0, 15]))

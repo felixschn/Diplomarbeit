@@ -28,7 +28,7 @@ def send_high_level_derivation_file():
     show_progress = tqdm.tqdm(range(size_of_file), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024)
     time.sleep(2)
 
-    # reading the security mechanism file from the Sever and sending it to the Client
+    # reading the high_level_derivation file from the Sever and sending it to the Client
     with open(path_to_file, "rb") as file:
         while True:
             read_data = file.read(BUFFER_SIZE)

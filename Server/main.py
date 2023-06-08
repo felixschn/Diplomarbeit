@@ -9,14 +9,14 @@ PORT = 65000
 def connection_to_server(message_name):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    # connect to Client
+    # connect to the Client
     try:
         sock.connect((HOST, PORT))
         print('Connection established:')
         return sock
 
     except:
-        print(f"{message_name}: Couldn't connect, because wrong port or IP address was used")
+        print(f"{message_name}: couldn't connect because the wrong port or IP address was used")
 
     return
 
