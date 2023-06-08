@@ -1,13 +1,9 @@
-import subprocess
-from inspect import getframeinfo, currentframe
-
-
 def _vpn0():
     print("disabled vpn0")
 
+
 def _vpn1():
     print("enabled vpn1")
-
 
 
 def vpn(mode):
