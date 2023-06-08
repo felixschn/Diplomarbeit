@@ -83,6 +83,39 @@ def get_filter_files() -> list:
         return []
 
 
+def get_keystore_parameters():
+    db_cursor = get_cursor()
+
+    try:
+        keystore_query = "SELECT * FROM context_information_keystore"
+        keystore_list = db_cursor.execute(keystore_query).fetchall()
+
+        return keystore_list
+
+    except sqlite3.OperationalError:
+        frame_info = getframeinfo(currentframe())
+        print("\n[ERROR]: in ", frame_info.filename, "in line:", frame_info.lineno,
+              "Could not retrieve the Keystore parameters; context information cannot be processed without keystore information; waiting for keystore update" \
+              "message")
+        raise Exception
+
+
+def get_high_level_derivation_files():
+    db_cursor = db_connection
+
+    try:
+        derivation_files_query = "SELECT * FROM high_level_derivation_files"
+        high_level_derivation_list = db_cursor.execute(derivation_files_query).fetchall()
+
+        return high_level_derivation_list
+
+    except sqlite3.OperationalError:
+        frame_info = getframeinfo(currentframe())
+        print("\n[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+              "Could not retrieve high-level derivation file names; therefore, the standard weight "
+              "calculation will be used")
+
+
 def update_security_mechanism_information(mechanism_information_update_message):
     db_cursor = get_cursor()
 

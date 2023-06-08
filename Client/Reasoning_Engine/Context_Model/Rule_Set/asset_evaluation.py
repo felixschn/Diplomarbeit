@@ -16,15 +16,9 @@ def asset_evaluation(received_context_information) -> tuple[float, float]:
     db_cursor = database_connector.get_cursor()
 
     # check if any keystore information is available in the database, otherwise no calculation can be done
-    try:
-        keystore_query = "SELECT * FROM context_information_keystore"
-        keystore_list = db_cursor.execute(keystore_query).fetchall()
-
-    except sqlite3.OperationalError:
-        frame_info = getframeinfo(currentframe())
-        print("\n[ERROR]: in ", frame_info.filename, "in line:", frame_info.lineno,
-              "Database does not contain keystore table;context information cannot be processed without keystore information; waiting for keystore update" \
-              "message\n")
+    keystore_list = database_connector.get_keystore_parameters()
+    if not keystore_list:
+        print("[Error]: the database does not contain any Keystore parameters; please send an update message")
         raise Exception
 
     # transform list of tuples to separate keys for better access to keystore data
@@ -38,25 +32,28 @@ def asset_evaluation(received_context_information) -> tuple[float, float]:
         if key in received_context_information.keys():
             evaluation_dict[key] = received_context_information[key]
 
+    # retrieve and execute high-level derivation files; use standard calculation if none exist
     try:
-        derivation_files_query = "SELECT * FROM high_level_derivation_files"
-        high_level_derivation_list = db_cursor.execute(derivation_files_query).fetchall()
+        high_level_derivation_list = database_connector.get_high_level_derivation_files()
+        if not high_level_derivation_list:
+            print("[Warning]: the database, or the system, does not contain any high-level derivation files; "
+                  "therefore, the standard asset calculation is used; consider sending an update message for high-level derivation")
 
     except sqlite3.OperationalError:
         frame_info = getframeinfo(currentframe())
-        print("\n[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno, "Database does not contain high-level derivation files;\nStandard weight "
-                                                                                   "calculation will be used;\n")
+        print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
+              "Could not retrieve high-level derivation file names; therefore, the standard weight "
+              "calculation will be used")
 
-        # if no derivation files present the standard asset calculation is triggered
         calculated_asset += asset_calculation_standard(evaluation_dict, keystore_dict)
         return calculated_asset, max_sum_of_asset
 
     for high_level_derivation_file in high_level_derivation_list:
-        # remove .py extension for import_module function
+        # remove .py extension for the import_module function
         formatted_file_name = high_level_derivation_file[0].replace('.py', '')
 
         try:
-            # import received high-level derivation file as python module
+            # import the received high-level derivation file as a Python module
             imported_mod = import_module(f"Client.Reasoning_Engine.Context_Model.Rule_Set.{formatted_file_name}")
 
         except:
@@ -73,7 +70,7 @@ def asset_evaluation(received_context_information) -> tuple[float, float]:
         except:
             frame_info = getframeinfo(currentframe())
             print("[ERROR]: in", frame_info.filename, "in line:", frame_info.lineno,
-                  "could not call high_level_derivation: ", formatted_file_name)
+                  "could not execute high_level_derivation: ", formatted_file_name)
             continue
 
     calculated_asset += asset_calculation_standard(evaluation_dict, keystore_dict)
