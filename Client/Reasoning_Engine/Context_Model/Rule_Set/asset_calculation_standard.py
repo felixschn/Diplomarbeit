@@ -2,7 +2,7 @@ import Client.Reasoning_Engine.Context_Model.Rule_Set.asset_evaluation as asset_
 
 
 def asset_calculation(received_message_value, minimum_value, maximum_value, desirable_value, weight) -> float:
-    # calculate mean to check if the desirable_value inclines to the left or on the right of the scale
+    # calculate the mean to check if the desirable_value inclines to the left or right of the scale
     mean_value = (maximum_value - minimum_value) / 2
 
     if desirable_value > mean_value:
