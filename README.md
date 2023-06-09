@@ -29,12 +29,11 @@ For demonstration purposes the [Server](../felixschn/Diplomarbeit/Server) struct
 SUMO is an open source tool and can be downloaded here: [SUMO Installation](https://sumo.dlr.de/docs/Downloads.php)
 
 
-In order to run the system, the Client can be activated by executing the Python file "network_class" in the Client's Application Area directory. Once the Client is activated it will wait for incoming socket server connections which can be triggered in various ways:
-
 
 ## Running the System
 
-Normally, the system should start without complications when all [Requirements](#requierements) are installed. However, should the dynamically path declarations not work, you can edit them directly in the affected files. For other issues see the console output.
+Normally, the system should start without complications when all [Requirements](#requierements) are installed. However, should the dynamically path declarations not work, you can edit them directly in the affected files. For other issues, see the console output. 
+In order to run the system, the Client can be activated by executing the Python file [network_class](../felixschn/Diplomarbeit/Client/Application_Area/network_class.py) in the Client's [Application_Area](../felixschn/Diplomarbeit/Client/Application_Area) directory. Once the Client is activated, it will wait for incoming messages that can be triggered in various ways:
 
 
 ### Adding Necessary Files and Instructions
